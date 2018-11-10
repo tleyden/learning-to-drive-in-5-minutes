@@ -1,7 +1,7 @@
 # Copyright (c) 2018 Roma Sokolkov
 # MIT License
 
-'''
+"""
 Hijacked donkey_gym wrapper with VAE.
 
 - Use Z vector as observation space.
@@ -10,7 +10,7 @@ Hijacked donkey_gym wrapper with VAE.
 Problem that DDPG already well implemented in stable-baselines
 and VAE integration will require full reimplementation of DDPG
 codebase. Instead we hijack VAE into gym environment.
-'''
+"""
 
 import os
 
@@ -21,9 +21,12 @@ from donkey_gym.envs.donkey_env import DonkeyEnv
 from donkey_gym.envs.donkey_sim import DonkeyUnitySimContoller
 from donkey_gym.envs.donkey_proc import DonkeyUnityProcess
 
+
 class DonkeyVAEEnv(DonkeyEnv):
     def __init__(self, level=0, time_step=0.05, frame_skip=2, z_size=512):
+        # super().__init__(level, time_step, frame_skip)
         self.z_size = z_size
+        self.vae = None
 
         print("starting DonkeyGym env")
         # start Unity simulation subprocess
@@ -31,20 +34,20 @@ class DonkeyVAEEnv(DonkeyEnv):
 
         try:
             exe_path = os.environ['DONKEY_SIM_PATH']
-        except:
+        except KeyError:
             print("Missing DONKEY_SIM_PATH environment var. Using defaults")
-            #you must start the executable on your own
+            # you must start the executable on your own
             exe_path = "self_start"
 
         try:
             port = int(os.environ['DONKEY_SIM_PORT'])
-        except:
+        except KeyError:
             print("Missing DONKEY_SIM_PORT environment var. Using defaults")
-            port = 9090
+            port = 9091
 
         try:
-            headless = os.environ['DONKEY_SIM_HEADLESS']=='1'
-        except:
+            headless = os.environ['DONKEY_SIM_HEADLESS'] == '1'
+        except KeyError:
             print("Missing DONKEY_SIM_HEADLESS environment var. Using defaults")
             headless = False
 
@@ -72,7 +75,7 @@ class DonkeyVAEEnv(DonkeyEnv):
         self.viewer.wait_until_loaded()
 
     def step(self, action):
-        for i in range(self.frame_skip):
+        for _ in range(self.frame_skip):
             self.viewer.take_action(action)
             observation, reward, done, info = self._observe()
         return observation, reward, done, info

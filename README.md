@@ -66,7 +66,7 @@ Just to make sure that environment was setup correctly try [pretrained models](h
 
 # Credits
 
-- [wayve.ai](wayve.ai) for idea and inspiration.
+- [wayve.ai](https://wayve.ai) for idea and inspiration.
 - [Tawn Kramer](https://github.com/tawnkramer) for Donkey simulator and Donkey Gym.
 - [stable-baselines](https://github.com/hill-a/stable-baselines) for DDPG implementation.
 - [world models experiments](https://github.com/hardmaru/WorldModelsExperiments) for VAE implementation.

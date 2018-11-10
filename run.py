@@ -30,7 +30,7 @@ env.unwrapped.set_vae(vae)
 # Run in test mode of trained models exist.
 if os.path.exists(PATH_MODEL_DDPG + ".pkl") and \
    os.path.exists(PATH_MODEL_VAE):
-    print("Task: test")
+    print("=================== Task: Testing ===================")
     ddpg = DDPG.load(PATH_MODEL_DDPG, env)
     vae.load(PATH_MODEL_VAE)
 
@@ -44,7 +44,7 @@ if os.path.exists(PATH_MODEL_DDPG + ".pkl") and \
         env.render()
 # Run in training mode.
 else:
-    print("Task: train")
+    print("=================== Task: Training ===================")
     # the noise objects for DDPG
     n_actions = env.action_space.shape[-1]
     action_noise = OrnsteinUhlenbeckActionNoise(
@@ -52,6 +52,8 @@ else:
             theta=float(0.6) * np.ones(n_actions),
             sigma=float(0.2) * np.ones(n_actions)
             )
+    n_steps = 3000
+    n_skip_ddpg = 10 # n_episodes for gathering experience
 
     ddpg = DDPG(LnMlpPolicy,
                 env,
@@ -64,7 +66,8 @@ else:
                 memory_limit=10000,
                 nb_train_steps=3000,
                 )
-    ddpg.learn(total_timesteps=3000, vae=vae, skip_episodes=10)
+    ddpg.learn(total_timesteps=n_steps, vae=vae,
+               skip_episodes=n_skip_ddpg, optimize_vae=False)
     # Finally save model files.
     ddpg.save(PATH_MODEL_DDPG)
     vae.save(PATH_MODEL_VAE)

@@ -1,9 +1,9 @@
 # Copyright (c) 2018 Roma Sokolkov
 # MIT License
 
-'''
+"""
 VAE controller for runtime optimization.
-'''
+"""
 
 import numpy as np
 
@@ -28,6 +28,7 @@ class VAEController:
         self.batch_size = batch_size
 
         # Buffer
+        self.buffer = None
         self.buffer_size = buffer_size
         self.buffer_pos = -1
         self.buffer_full = False
@@ -108,7 +109,7 @@ class VAEController:
                     self.vae.global_step,
                     self.vae.train_op
                 ], feed)
-                if ((train_step + 1) % 50 == 0):
+                if (train_step + 1) % 50 == 0:
                     print("VAE: optimization step",
                           (train_step + 1), train_loss, r_loss, kl_loss)
         self.set_target_params()

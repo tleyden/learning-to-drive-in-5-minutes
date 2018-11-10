@@ -23,7 +23,7 @@ class DDPGWithVAE(DDPG):
     - More verbosity.
     - Add VAE optimization step.
     """
-    def learn(self, total_timesteps, callback=None, vae=None, skip_episodes=5):
+    def learn(self, total_timesteps, callback=None, vae=None, skip_episodes=5, optimize_vae=True):
         rank = MPI.COMM_WORLD.Get_rank()
         # we assume symmetric actions.
         assert np.all(np.abs(self.env.action_space.low) == self.env.action_space.high)
@@ -91,8 +91,9 @@ class DDPGWithVAE(DDPG):
 
                 # Train VAE.
                 train_start = time.time()
-                vae.optimize()
-                print("VAE training duration:", time.time() - train_start)
+                if optimize_vae and vae is not None:
+                    vae.optimize()
+                    print("VAE training duration:", time.time() - train_start)
 
                 # Train DDPG.
                 actor_losses = []

@@ -13,7 +13,7 @@ import json
 
 
 def normalize(data):
-    return data/255.0
+    return data / 255.0
 
 
 def denormalize(data):
@@ -21,7 +21,8 @@ def denormalize(data):
 
 
 class ConvVAE(object):
-  def __init__(self, z_size=512, batch_size=100, learning_rate=0.0001, kl_tolerance=0.5, is_training=True, reuse=False, gpu_mode=True):
+  def __init__(self, z_size=512, batch_size=100, learning_rate=0.0001,
+               kl_tolerance=0.5, is_training=True, reuse=False, gpu_mode=True):
     self.z_size = z_size
     self.batch_size = batch_size
     self.learning_rate = learning_rate
@@ -70,7 +71,7 @@ class ConvVAE(object):
       if self.is_training:
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
 
-        eps = 1e-6 # avoid taking log of zero
+        # eps = 1e-6 # avoid taking log of zero
 
         # reconstruction loss
         self.r_loss = tf.reduce_sum(
@@ -136,8 +137,8 @@ class ConvVAE(object):
     _, mshape, _ = self.get_model_params()
     rparam = []
     for s in mshape:
-      #rparam.append(np.random.randn(*s)*stdev)
-      rparam.append(np.random.standard_cauchy(s)*stdev) # spice things up!
+      # rparam.append(np.random.randn(*s)*stdev)
+      rparam.append(np.random.standard_cauchy(s) * stdev) # spice things up!
     return rparam
 
   def set_model_params(self, params):
@@ -148,7 +149,7 @@ class ConvVAE(object):
         pshape = self.sess.run(var).shape
         p = np.array(params[idx])
         assert pshape == p.shape, "inconsistent shape"
-        assign_op = var.assign(p.astype(np.float)/10000.)
+        assign_op = var.assign(p.astype(np.float) / 10000.)
         self.sess.run(assign_op)
         idx += 1
 
