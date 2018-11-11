@@ -52,12 +52,11 @@ class DDPGWithVAE(DDPG):
 
                     # Predict next action.
                     action, q_value = self._policy(obs, apply_noise=True, compute_q=True)
-                    print(action)
+                    if self.verbose >= 2:
+                        print(action)
                     assert action.shape == self.env.action_space.shape
 
                     # Execute next action.
-                    if rank == 0 and self.render:
-                        self.env.render()
                     new_obs, reward, done, _ = self.env.step(action * np.abs(self.action_space.low))
 
                     step += 1
@@ -76,7 +75,7 @@ class DDPGWithVAE(DDPG):
                         callback(locals(), globals())
 
                     if done:
-                        print("episode finished. Reward: ", episode_reward)
+                        print("episode finished. Reward: {:.2f}".format(episode_reward))
                         # Episode done.
                         episode_reward = 0.
                         episode_step = 0
@@ -105,7 +104,7 @@ class DDPGWithVAE(DDPG):
                         critic_losses.append(critic_loss)
                         actor_losses.append(actor_loss)
                         self._update_target_net()
-                    print("DDPG training duration:", time.time() - train_start)
+                    print("DDPG training duration: {:.2f}".format(time.time() - train_start))
 
                     mpi_size = MPI.COMM_WORLD.Get_size()
                     # Log stats.

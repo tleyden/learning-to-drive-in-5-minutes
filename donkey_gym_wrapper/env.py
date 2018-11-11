@@ -23,10 +23,14 @@ from donkey_gym.envs.donkey_proc import DonkeyUnityProcess
 
 
 class DonkeyVAEEnv(DonkeyEnv):
-    def __init__(self, level=0, time_step=0.05, frame_skip=2, z_size=512):
+    def __init__(self, level=0, time_step=0.05, frame_skip=5, z_size=512):
         # super().__init__(level, time_step, frame_skip)
         self.z_size = z_size
         self.vae = None
+        # PID
+        self.k_p = 0.4 # P factor
+        self.k_d = 0.1
+        self.prev_error = None
 
         print("starting DonkeyGym env")
         # start Unity simulation subprocess
@@ -75,6 +79,14 @@ class DonkeyVAEEnv(DonkeyEnv):
         self.viewer.wait_until_loaded()
 
     def step(self, action):
+        # error = current_theta - action
+        # error_d = 0.0
+        # if self.prev_error is not None:
+        #     error_d = (error - self.prev_error)
+        #
+        # command = self.k_p * error + self.k_d * error_d
+        # self.prev_error = error
+        # print("action=", action[0])
         for _ in range(self.frame_skip):
             self.viewer.take_action(action)
             observation, reward, done, info = self._observe()
@@ -82,6 +94,7 @@ class DonkeyVAEEnv(DonkeyEnv):
 
     def reset(self):
         self.viewer.reset()
+        self.prev_error = None
         observation, reward, done, info = self._observe()
         return observation
 
