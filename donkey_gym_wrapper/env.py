@@ -23,7 +23,7 @@ from donkey_gym.envs.donkey_proc import DonkeyUnityProcess
 
 
 class DonkeyVAEEnv(DonkeyEnv):
-    def __init__(self, level=0, time_step=0.05, frame_skip=5, z_size=512):
+    def __init__(self, level=0, time_step=0.05, frame_skip=2, z_size=512):
         # super().__init__(level, time_step, frame_skip)
         self.z_size = z_size
         self.vae = None

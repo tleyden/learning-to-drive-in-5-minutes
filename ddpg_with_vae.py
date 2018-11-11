@@ -57,7 +57,12 @@ class DDPGWithVAE(DDPG):
                     assert action.shape == self.env.action_space.shape
 
                     # Execute next action.
-                    new_obs, reward, done, _ = self.env.step(action * np.abs(self.action_space.low))
+                    new_obs, reward, done, info = self.env.step(action * np.abs(self.action_space.low))
+
+                    if info.get('error_too_high'):
+                        time.sleep(1)
+                        self._reset()
+                        obs = self.env.reset()
 
                     step += 1
                     total_steps += 1

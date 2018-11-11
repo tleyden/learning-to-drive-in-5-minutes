@@ -45,7 +45,7 @@ env.unwrapped.set_vae(vae)
 if os.path.exists(PATH_MODEL_DDPG + ".pkl") and \
    os.path.exists(PATH_MODEL_VAE):
     print("=================== Task: Testing ===================")
-    ddpg = DDPG.load(PATH_MODEL_DDPG, env)
+    ddpg = DDPG.load(PATH_MODEL_DDPG, env=env, policy=CustomDDPGPolicy)
     vae.load(PATH_MODEL_VAE)
 
     obs = env.reset()
@@ -53,7 +53,7 @@ if os.path.exists(PATH_MODEL_DDPG + ".pkl") and \
         action, _states = ddpg.predict(obs)
         # print(action)
         obs, reward, done, info = env.step(action)
-        if done:
+        if done and not info.get('error_too_high'):
             env.reset()
         env.render()
 # Run in training mode.
