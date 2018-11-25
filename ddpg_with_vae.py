@@ -42,13 +42,17 @@ class DDPGWithVAE(DDPG):
 
             actor_losses = []
             critic_losses = []
+            should_return = False
 
             while True:
                 obs = self.env.reset()
                 # Rollout one episode.
                 while True:
                     if total_steps >= total_timesteps:
-                        return self
+                        if should_return:
+                            return self
+                        should_return = True
+                        break
 
                     # Predict next action.
                     action, q_value = self._policy(obs, apply_noise=True, compute_q=True)

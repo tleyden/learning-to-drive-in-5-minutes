@@ -10,6 +10,8 @@ from stable_baselines.ddpg.policies import LnMlpPolicy
 from stable_baselines.ddpg.noise import OrnsteinUhlenbeckActionNoise
 from stable_baselines.ddpg.policies import FeedForwardPolicy as DDPGPolicy
 from stable_baselines.common.policies import register_policy
+from stable_baselines.common.vec_env import VecFrameStack, DummyVecEnv
+from stable_baselines.common import set_global_seeds
 
 
 from ddpg_with_vae import DDPGWithVAE as DDPG
@@ -28,7 +30,10 @@ class CustomDDPGPolicy(DDPGPolicy):
 register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
 
 
-env = gym.make('donkey-vae-v0')
+set_global_seeds(0)
+
+env = DummyVecEnv([lambda: gym.make('donkey-vae-v0')])
+env = VecFrameStack(env, n_stack=4)
 
 PATH_MODEL_VAE = "vae.json"
 # Final filename will be PATH_MODEL_DDPG + ".pkl"
@@ -39,7 +44,7 @@ PATH_MODEL_DDPG = "ddpg"
 # buffers raw image for future optimization.
 # z_size=512
 vae = VAEController(z_size=512)
-env.unwrapped.set_vae(vae)
+env.venv.envs[0].unwrapped.set_vae(vae)
 
 # Run in test mode of trained models exist.
 if os.path.exists(PATH_MODEL_DDPG + ".pkl") and \
@@ -53,13 +58,14 @@ if os.path.exists(PATH_MODEL_DDPG + ".pkl") and \
         action, _states = ddpg.predict(obs)
         # print(action)
         obs, reward, done, info = env.step(action)
-        if done and not info.get('error_too_high'):
+        if done and not info[0].get('error_too_high'):
             env.reset()
         env.render()
 # Run in training mode.
 else:
     print("=================== Task: Training ===================")
 
+    print("Loading VAE...")
     vae.load(PATH_MODEL_VAE)
 
     # the noise objects for DDPG
@@ -81,13 +87,14 @@ else:
                 param_noise=None,
                 action_noise=action_noise,
                 memory_limit=10000,
-                nb_train_steps=100,
+                nb_train_steps=400,
                 # normalize_observations=True,
                 # normalize_returns=True
                 )
-    # ddpg = DDPG.load(PATH_MODEL_DDPG, env)
+    # ddpg = DDPG.load('ddpg_fs8.pkl', policy=CustomDDPGPolicy, env=env)
     ddpg.learn(total_timesteps=n_steps, vae=vae,
                skip_episodes=n_skip_ddpg, optimize_vae=False)
+    print("Training over, saving...")
     # Finally save model files.
     ddpg.save(PATH_MODEL_DDPG)
     vae.save(PATH_MODEL_VAE)
