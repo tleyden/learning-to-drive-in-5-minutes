@@ -23,14 +23,20 @@ from donkey_gym.envs.donkey_proc import DonkeyUnityProcess
 
 
 class DonkeyVAEEnv(DonkeyEnv):
-    def __init__(self, level=0, time_step=0.05, frame_skip=2, z_size=512):
+    def __init__(self, level=0, time_step=0.05, frame_skip=2,
+                 z_size=512, vae=None, const_throttle=None,
+                 min_throttle=0.2, max_throttle=0.5):
         # super().__init__(level, time_step, frame_skip)
         self.z_size = z_size
-        self.vae = None
+        self.vae = vae
         # PID
         self.k_p = 0.4 # P factor
         self.k_d = 0.1
         self.prev_error = None
+
+        self.const_throttle = const_throttle
+        self.min_throttle = min_throttle
+        self.max_throttle = max_throttle
 
         print("starting DonkeyGym env")
         # start Unity simulation subprocess
@@ -60,9 +66,13 @@ class DonkeyVAEEnv(DonkeyEnv):
         # start simulation com
         self.viewer = DonkeyUnitySimContoller(level=level, time_step=time_step, port=port)
 
-        # steering
-        # TODO(r7vme): Add throttle
-        self.action_space = spaces.Box(low=np.array([-1.0]), high=np.array([1.0]), dtype=np.float32)
+        if const_throttle is not None:
+            # steering only
+            self.action_space = spaces.Box(low=np.array([-1]), high=np.array([1]), dtype=np.float32)
+        else:
+            # steering + throttle, action space must be symmetric
+            self.action_space = spaces.Box(low=np.array([-1, -1]),
+                                           high=np.array([1, 1]), dtype=np.float32)
 
         # z latent vector
         self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
@@ -87,6 +97,16 @@ class DonkeyVAEEnv(DonkeyEnv):
         # command = self.k_p * error + self.k_d * error_d
         # self.prev_error = error
         # print("action=", action[0])
+        if self.const_throttle is not None:
+            action = np.concatenate([action, [self.const_throttle]])
+        else:
+            # Convert from [-1, 1] to [0, 1]
+            t = (action[1] + 1) / 2
+            # Convert from [0, 1] to [min, max]
+            action[1] = (1 - t) * self. min_throttle + self.max_throttle * t
+
+        # print(action)
+
         for _ in range(self.frame_skip):
             self.viewer.take_action(action)
             observation, reward, done, info = self._observe()
