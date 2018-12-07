@@ -23,7 +23,8 @@ class DDPGWithVAE(DDPG):
     - More verbosity.
     - Add VAE optimization step.
     """
-    def learn(self, total_timesteps, callback=None, vae=None, skip_episodes=5, optimize_vae=True):
+    def learn(self, total_timesteps, callback=None, vae=None,
+              skip_episodes=5, optimize_vae=True, min_throttle=0):
         rank = MPI.COMM_WORLD.Get_rank()
         # we assume symmetric actions.
         assert np.all(np.abs(self.env.action_space.low) == self.env.action_space.high)
@@ -76,15 +77,14 @@ class DDPGWithVAE(DDPG):
                     episode_step += 1
 
                     # Book-keeping.
-                    # Do not record observations, while we skip DDPG training.
-                    if (episodes + 1) > skip_episodes:
-                        self._store_transition(obs, action, reward, new_obs, done)
+                    self._store_transition(obs, action, reward, new_obs, done)
+
                     obs = new_obs
                     if callback is not None:
                         callback(locals(), globals())
 
                     if done:
-                        print("episode finished. Reward: {:.2f}".format(episode_reward))
+                        print("Episode finished. Reward: {:.2f}".format(episode_reward))
                         # Episode done.
                         episode_reward = 0.
                         episode_step = 0
@@ -95,8 +95,7 @@ class DDPGWithVAE(DDPG):
                         # Finish rollout on episode finish.
                         break
                 # Prevent the car from moving during training
-                # todo: replace throttle by - min_throttle
-                self.env.step([0.0, 0.0])
+                # self.env.step([0.0, -min_throttle])
                 print("rollout finished")
 
                 # Train VAE.
@@ -129,21 +128,6 @@ class DDPGWithVAE(DDPG):
                     combined_stats['total/steps_per_second'] = float(step) / float(duration)
                     combined_stats['total/episodes'] = episodes
 
-                    def as_scalar(scalar):
-                        """
-                        check and return the input if it is a scalar, otherwise raise ValueError
-
-                        :param scalar: (Any) the object to check
-                        :return: (Number) the scalar if x is a scalar
-                        """
-                        if isinstance(scalar, np.ndarray):
-                            assert scalar.size == 1
-                            return scalar[0]
-                        elif np.isscalar(scalar):
-                            return scalar
-                        else:
-                            raise ValueError('expected scalar, got %s' % scalar)
-
                     combined_stats_sums = MPI.COMM_WORLD.allreduce(
                         np.array([as_scalar(x) for x in combined_stats.values()]))
                     combined_stats = {k: v / mpi_size for (k, v) in zip(combined_stats.keys(), combined_stats_sums)}
@@ -155,3 +139,19 @@ class DDPGWithVAE(DDPG):
                         logger.record_tabular(key, combined_stats[key])
                     logger.dump_tabular()
                     logger.info('')
+
+
+def as_scalar(scalar):
+    """
+    check and return the input if it is a scalar, otherwise raise ValueError
+
+    :param scalar: (Any) the object to check
+    :return: (Number) the scalar if x is a scalar
+    """
+    if isinstance(scalar, np.ndarray):
+        assert scalar.size == 1
+        return scalar[0]
+    elif np.isscalar(scalar):
+        return scalar
+    else:
+        raise ValueError('expected scalar, got %s' % scalar)
