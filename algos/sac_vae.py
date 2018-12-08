@@ -12,7 +12,7 @@ from stable_baselines import logger
 class SACWithVAE(SAC):
     """docstring for SACWithVAE."""
     def learn(self, total_timesteps, callback=None, seed=None, vae=None,
-              skip_episodes=5, optimize_vae=True, min_throttle=0, writer=None, log_interval=1):
+              skip_episodes=0, optimize_vae=False, min_throttle=0, writer=None, log_interval=1):
         self._setup_learn(seed)
 
         start_time = time.time()
@@ -86,7 +86,6 @@ class SACWithVAE(SAC):
                 print("Episode finished. Reward: {:.2f}".format(episode_rewards[-1]))
                 episode_rewards.append(0.0)
                 ep_len = 0
-
                 for grad_step in range(self.gradient_steps):
                     if step < self.batch_size or step < self.learning_starts:
                         break

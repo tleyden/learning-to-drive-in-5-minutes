@@ -24,7 +24,7 @@ class DDPGWithVAE(DDPG):
     - Add VAE optimization step.
     """
     def learn(self, total_timesteps, callback=None, vae=None,
-              skip_episodes=5, optimize_vae=True, min_throttle=0):
+              skip_episodes=0, optimize_vae=False, min_throttle=0):
         rank = MPI.COMM_WORLD.Get_rank()
         # we assume symmetric actions.
         assert np.all(np.abs(self.env.action_space.low) == self.env.action_space.high)
