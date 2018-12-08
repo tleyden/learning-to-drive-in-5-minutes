@@ -94,10 +94,7 @@ class DDPGWithVAE(DDPG):
                         obs = self.env.reset()
                         # Finish rollout on episode finish.
                         break
-                # Prevent the car from moving during training
-                # self.env.step([0.0, -min_throttle])
-                print("rollout finished")
-
+                        
                 # Train VAE.
                 train_start = time.time()
                 if optimize_vae and vae is not None:

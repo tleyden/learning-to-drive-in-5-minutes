@@ -1,8 +1,9 @@
-# learning-to-drive-in-a-day
+# Learning to Drive in 5 Minutes
 
-DISCLAIMER: This repo is a boilerplate for the approach described in paper. It works in general, but not stable enough to reproduce good policy in 100% cases. I recommend to play with [pretrained VAE](#disable-vae-optimization) to get quicker results.
+Using Soft Actor-Critic (SAC) and a Variational AutoEncoder (VAE).
 
-![](content/example-after-3000-steps.gif)
+
+![result](content/example-after-3000-steps.gif)
 
 Video with [real RC car](https://www.youtube.com/watch?v=6JUjDw9tfD4).
 
@@ -14,19 +15,13 @@ Missing parts:
 
 # Quick start
 
-NOTE: Assuming Intel Graphics (`/dev/dri`) present.
+0. Download simulator
+1. Install dependencies
+2. (optional but recommended) Download pre-trained VAE
+3. Train controller
 
-Download compiled [Donkey Car simulator](https://drive.google.com/open?id=1sK2luxKYV1cpaZLhVwfXrmGU3TRa5C3B) ([source](https://github.com/tawnkramer/sdsandbox/tree/donkey)) into `$HOME/sim` directory.
-
-Run training.
 ```
-docker build -t learning-to-drive-in-a-day .
-./run-in-docker.sh
-```
-
-Run test with the same command (script run test if there are trained models `ddpg.pkl` and `vae.json`).
-```
-./run-in-docker.sh
+python train.py --algo sac -vae logs/vae.json
 ```
 
 # Under the hood
@@ -58,15 +53,15 @@ img = PIL.Image.fromarray(arr)
 img.save('decoded_img.jpg')
 ```
 
-Add this code in test section of `run.py`.
-
 ## Try pretrained models
 
-Just to make sure that environment was setup correctly try [pretrained models](https://drive.google.com/open?id=16WYkH7goKnJM52ke1KAzs5vozGiuKPqu). Place `ddpg.pkl` and `vae.json` into the root directory and run `./run-in-docker.sh`. You should see similar to the GIF above.
+Just to make sure that environment was setup correctly try [pretrained models](https://drive.google.com/open?id=16WYkH7goKnJM52ke1KAzs5vozGiuKPqu). Place `ddpg.pkl` and `vae.json` into the root directory. You should see similar to the GIF above.
 
 # Credits
 
-- [wayve.ai](https://wayve.ai) for idea and inspiration.
+- [r7vme](https://github.com/r7vme/learning-to-drive-in-a-day) Author of the original implementation
+- [Wayve.ai](https://wayve.ai) for idea and inspiration.
 - [Tawn Kramer](https://github.com/tawnkramer) for Donkey simulator and Donkey Gym.
-- [stable-baselines](https://github.com/hill-a/stable-baselines) for DDPG implementation.
-- [world models experiments](https://github.com/hardmaru/WorldModelsExperiments) for VAE implementation.
+- [Stable-Baselines](https://github.com/hill-a/stable-baselines) for DDPG/SAC and PPO implementations.
+- [RL Baselines Zoo](https://github.com/araffin/rl-baselines-zoo) for training/enjoy scripts.
+- [World Models Experiments](https://github.com/hardmaru/WorldModelsExperiments) for VAE implementation.

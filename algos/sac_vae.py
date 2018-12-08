@@ -18,10 +18,12 @@ class SACWithVAE(SAC):
         start_time = time.time()
         episode_rewards = [0.0]
         obs = self.env.reset()
-        reset = True
         self.episode_reward = np.zeros((1,))
         ep_info_buf = deque(maxlen=100)
         ep_len = 0
+        n_updates = 0
+        infos_values = []
+        mb_infos_vals = []
 
         for step in range(total_timesteps):
             if callback is not None:
@@ -62,8 +64,8 @@ class SACWithVAE(SAC):
                 self.episode_reward = total_episode_reward_logger(self.episode_reward, ep_reward,
                                                                   ep_done, writer, step)
 
-            mb_infos_vals = []
             if ep_len > self.train_freq:
+                mb_infos_vals = []
                 print("Additional training")
                 for grad_step in range(self.gradient_steps):
                     if step < self.batch_size or step < self.learning_starts:
@@ -77,6 +79,7 @@ class SACWithVAE(SAC):
 
             episode_rewards[-1] += reward
             if done:
+                mb_infos_vals = []
                 if not isinstance(self.env, VecEnv):
                     obs = self.env.reset()
 
@@ -89,14 +92,18 @@ class SACWithVAE(SAC):
                 for grad_step in range(self.gradient_steps):
                     if step < self.batch_size or step < self.learning_starts:
                         break
+                    n_updates += 1
+                    # Update policy and critics (q functions)
                     mb_infos_vals.append(self._train_step(step, writer))
+
                     if (step + grad_step) % self.target_update_interval == 0:
                         # Update target network
                         self.sess.run(self.target_update_op)
 
 
+            # Log losses and entropy, useful for monitor training
             if len(mb_infos_vals) > 0:
-                mb_infos_vals = np.mean(mb_infos_vals, axis=0)
+                infos_values = np.mean(mb_infos_vals, axis=0)
 
             if len(episode_rewards[-101:-1]) == 0:
                 mean_reward = -np.inf
@@ -110,17 +117,14 @@ class SACWithVAE(SAC):
                 logger.logkv("mean 100 episode reward", mean_reward)
                 logger.logkv('ep_rewmean', safe_mean([ep_info['r'] for ep_info in ep_info_buf]))
                 logger.logkv('eplenmean', safe_mean([ep_info['l'] for ep_info in ep_info_buf]))
-                # logger.logkv('eplenmean', )
-                # TODO: log entropy + explained variance
-                # + losses
-                # explained_var = explained_variance(values, returns)
-                # logger.logkv("nupdates", update)
+                logger.logkv("n_updates", n_updates)
                 logger.logkv("fps", fps)
-                # logger.logkv("explained_variance", float(explained_var))
                 logger.logkv('time_elapsed', "{:.2f}".format(time.time() - start_time))
-                if len(mb_infos_vals) > 0:
-                    for (name, val) in zip(self.infos_names, mb_infos_vals):
+                if len(infos_values) > 0:
+                    for (name, val) in zip(self.infos_names, infos_values):
                         logger.logkv(name, val)
                 logger.logkv("total timesteps", step)
                 logger.dumpkvs()
+                # Reset infos:
+                infos_values = []
         return self
