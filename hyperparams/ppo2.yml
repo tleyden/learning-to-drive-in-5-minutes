@@ -1,7 +1,7 @@
 DonkeyVae-v0:
   # normalize: "{'norm_obs': True, 'norm_reward': False}"
   n_timesteps: !!float 5000
-  policy: 'MlpPolicy'
+  policy: 'CnnPolicy'
   n_steps: 256
   noptepochs: 10
   nminibatches: 8

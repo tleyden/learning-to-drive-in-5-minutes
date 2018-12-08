@@ -43,6 +43,8 @@ vae = None
 if args.vae_path != '':
     print("Loading VAE ...")
     vae = load_vae(args.vae_path)
+else:
+    print("Learning from pixels...")
 
 # Load hyperparameters from yaml file
 with open('hyperparams/{}.yml'.format(args.algo), 'r') as f:
