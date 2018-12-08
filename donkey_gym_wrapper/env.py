@@ -25,14 +25,15 @@ from donkey_gym.envs.donkey_proc import DonkeyUnityProcess
 class DonkeyVAEEnv(DonkeyEnv):
     def __init__(self, level=0, time_step=0.05, frame_skip=2,
                  z_size=512, vae=None, const_throttle=None,
-                 min_throttle=0.2, max_throttle=0.5):
+                 min_throttle=0.2, max_throttle=0.5,
+                 max_cte_error=3.0):
         # super().__init__(level, time_step, frame_skip)
         self.z_size = z_size
         self.vae = vae
         # PID
-        self.k_p = 0.4 # P factor
-        self.k_d = 0.1
-        self.prev_error = None
+        # self.k_p = 0.4 # P factor
+        # self.k_d = 0.1
+        # self.prev_error = None
 
         self.const_throttle = const_throttle
         self.min_throttle = min_throttle
@@ -64,7 +65,8 @@ class DonkeyVAEEnv(DonkeyEnv):
         self.proc.start(exe_path, headless=headless, port=port)
 
         # start simulation com
-        self.viewer = DonkeyUnitySimContoller(level=level, time_step=time_step, port=port)
+        self.viewer = DonkeyUnitySimContoller(level=level, time_step=time_step,
+                                              port=port, max_cte_error=max_cte_error)
 
         if const_throttle is not None:
             # steering only
@@ -74,10 +76,15 @@ class DonkeyVAEEnv(DonkeyEnv):
             self.action_space = spaces.Box(low=np.array([-1, -1]),
                                            high=np.array([1, 1]), dtype=np.float32)
 
-        # z latent vector
-        self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
-                                            high=np.finfo(np.float32).max,
-                                            shape=(1, self.z_size), dtype=np.float32)
+        if vae is None:
+            height, width, n_channels = (80, 160, 3)
+            self.observation_space = spaces.Box(low=0, high=255,
+                                                shape=(height, width, n_channels), dtype=np.uint8)
+        else:
+            # z latent vector
+            self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
+                                                high=np.finfo(np.float32).max,
+                                                shape=(1, self.z_size), dtype=np.float32)
 
         # simulation related variables.
         self.seed()
@@ -120,9 +127,9 @@ class DonkeyVAEEnv(DonkeyEnv):
 
     def _observe(self):
         observation, reward, done, info = self.viewer.observe()
-        # Solves chicken-egg problem as gym calls reset before we call set_vae.
-        if not hasattr(self, "vae"):
-            return np.zeros(self.z_size), reward, done, info
+        # Learn from Pixels
+        if self.vae is None:
+            return observation, reward, done, info
         # Store image in VAE buffer.
         self.vae.buffer_append(observation)
         return self.vae.encode(observation), reward, done, info

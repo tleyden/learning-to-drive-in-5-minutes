@@ -13,12 +13,14 @@ from stable_baselines.ddpg.policies import LnMlpPolicy
 from stable_baselines.ddpg.noise import OrnsteinUhlenbeckActionNoise
 from stable_baselines.ddpg.policies import LnMlpPolicy
 from stable_baselines.sac.policies import MlpPolicy
+from stable_baselines.common.policies import MlpPolicy as PPO2Policy, CnnPolicy
 from stable_baselines.ddpg.policies import FeedForwardPolicy as DDPGPolicy
 from stable_baselines.sac.policies import FeedForwardPolicy as SACPolicy
 from stable_baselines.common.policies import register_policy
 from stable_baselines.common.vec_env import VecFrameStack, DummyVecEnv, VecNormalize
 from stable_baselines.common import set_global_seeds
 from stable_baselines.bench import Monitor
+from stable_baselines import PPO2
 
 
 from ddpg_with_vae import DDPGWithVAE as DDPG
@@ -48,6 +50,8 @@ parser.add_argument('--train', action='store_true', default=False,
                     help='Force training')
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Random Features')
+parser.add_argument('--no-vae', action='store_true', default=False,
+                    help='Learn from Pixels')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
 parser.add_argument('--algo', help='RL algo', type=str, default='ddpg')
 parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='', type=str)
@@ -68,20 +72,26 @@ else:
         policy = LnMlpPolicy
     else:
         policy = MlpPolicy
+        if args.no_vae:
+            policy = 'CnnPolicy'
 
 
 set_global_seeds(args.seed)
 
-MIN_THROTTLE = 0.2
+MIN_THROTTLE = 0.6
+MAX_THROTTLE = 0.8
 Z_SIZE = 512
 FRAME_SKIP = 2
 TIMESTEPS = 0.05
+MAX_CTE_ERROR = 3.5
 
 # Initialize VAE model and add it to gym environment.
 # VAE does image post processing to latent vector and
 # buffers raw image for future optimization.
 # z_size=512
-vae = VAEController(z_size=Z_SIZE)
+vae = None
+if not args.no_vae:
+    vae = VAEController(z_size=Z_SIZE)
 
 def make_env(seed=0):
     log_dir = "/tmp/gym/{}/".format(int(time.time()))
@@ -89,7 +99,8 @@ def make_env(seed=0):
     def _init():
         env = DonkeyVAEEnv(level=0, time_step=TIMESTEPS, frame_skip=FRAME_SKIP,
                            z_size=Z_SIZE, vae=vae, const_throttle=None,
-                           min_throttle=MIN_THROTTLE, max_throttle=0.4)
+                           min_throttle=MIN_THROTTLE, max_throttle=MAX_THROTTLE,
+                           max_cte_error=MAX_CTE_ERROR)
         env.seed(seed)
         env = Monitor(env, log_dir, allow_early_resets=True)
         return env
@@ -125,7 +136,7 @@ if os.path.exists(args.algo + ".pkl") and \
 else:
     print("=================== Task: Training ===================")
 
-    if not args.random_features:
+    if not args.random_features and vae is not None:
         print("Loading VAE...")
         vae.load(PATH_MODEL_VAE)
 
@@ -155,6 +166,19 @@ else:
                     normalize_observations=True,
                     normalize_returns=True
                     )
+    elif args.algo == 'ppo2':
+        policy = CnnPolicy if args.no_vae else PPO2Policy
+        model = PPO2(
+            policy,
+            env,
+            verbose=1,
+            n_steps=256,
+            noptepochs=10,
+            nminibatches=8,
+            ent_coef=0.0,
+            learning_rate=3e-4
+        )
+        model.learn(total_timesteps=args.n_timesteps)
     else:
         model = SAC(policy,
                    env,
@@ -170,12 +194,13 @@ else:
                    ent_coef=0.01,
                    )
     # ddpg = DDPG.load('ddpg_fs8.pkl', policy=CustomDDPGPolicy, env=env)
-    model.learn(total_timesteps=args.n_timesteps, vae=vae,
-               skip_episodes=n_skip, optimize_vae=False,
-               min_throttle=MIN_THROTTLE, log_interval=1)
+    if args.algo != "ppo2":
+        model.learn(total_timesteps=args.n_timesteps, vae=vae,
+                   skip_episodes=n_skip, optimize_vae=False,
+                   min_throttle=MIN_THROTTLE, log_interval=1)
 
     print("Training over, saving...")
     # Finally save model files.
     model.save(args.algo)
-
-    vae.save(PATH_MODEL_VAE)
+    if vae is not None:
+        vae.save(PATH_MODEL_VAE)
