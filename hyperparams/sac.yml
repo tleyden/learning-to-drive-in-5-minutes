@@ -8,5 +8,5 @@ DonkeyVae-v0:
   train_freq: 2000
   ent_coef: 0.01
   gradient_steps: 300
-  learning_starts: 300
+  learning_starts: 0
   # frame_stack: 2

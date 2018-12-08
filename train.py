@@ -130,7 +130,7 @@ if args.trained_agent.endswith('.pkl') and os.path.isfile(args.trained_agent):
                                   tensorboard_log=tensorboard_log, verbose=1, **hyperparams)
 
     exp_folder = args.trained_agent.split('.pkl')[0]
-    if os.path.isdir(exp_folder):
+    if normalize:
         print("Loading saved running average")
         env.load_running_average(exp_folder)
 else:

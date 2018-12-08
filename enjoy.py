@@ -14,7 +14,7 @@ parser.add_argument('--algo', help='RL Algorithm', default='ppo2',
                     type=str, required=False, choices=list(ALGOS.keys()))
 parser.add_argument('-n', '--n-timesteps', help='number of timesteps', default=1000,
                     type=int)
-parser.add_argument('--exp-id', help='Experiment ID (default: -1, no exp folder, 0: latest)', default=-1,
+parser.add_argument('--exp-id', help='Experiment ID (-1: no exp folder, 0: latest)', default=0,
                     type=int)
 parser.add_argument('--verbose', help='Verbose mode (0: no output, 1: INFO)', default=1,
                     type=int)

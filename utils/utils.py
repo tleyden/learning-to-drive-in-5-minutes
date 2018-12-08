@@ -12,6 +12,7 @@ from stable_baselines.common.policies import register_policy
 from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize, \
     VecFrameStack
 from stable_baselines.sac.policies import FeedForwardPolicy as SACPolicy
+from stable_baselines.ddpg.policies import FeedForwardPolicy as DDPGPolicy
 
 from algos import DDPG, SAC
 from donkey_gym_wrapper.env import DonkeyVAEEnv
@@ -26,8 +27,8 @@ ALGOS = {
     'ppo2': PPO2
 }
 
-MIN_THROTTLE = 0.6
-MAX_THROTTLE = 0.8
+MIN_THROTTLE = 0.3
+MAX_THROTTLE = 0.6
 Z_SIZE = 512
 FRAME_SKIP = 2
 TIMESTEPS = 0.05
@@ -53,6 +54,14 @@ class CustomSACPolicy(SACPolicy):
                                               feature_extraction="mlp")
 
 
+class CustomDDPGPolicy(DDPGPolicy):
+    def __init__(self, *args, **kwargs):
+        super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
+                                           layers=[32, 8],
+                                           feature_extraction="mlp",
+                                           layer_norm=True)
+
+register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
 register_policy('CustomSACPolicy', CustomSACPolicy)
 register_policy('CustomMlpPolicy', CustomMlpPolicy)
 
