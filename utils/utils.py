@@ -21,7 +21,7 @@ from algos import DDPG, SAC
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from vae.controller import VAEController
 from config import MIN_THROTTLE, MAX_THROTTLE, MAX_CTE_ERROR, Z_SIZE, LEVEL, FRAME_SKIP, TIMESTEPS,\
-    BASE_ENV, ENV_ID
+    BASE_ENV, ENV_ID, N_COMMAND_HISTORY
 
 ALGOS = {
     # 'a2c': A2C,
@@ -86,7 +86,7 @@ def make_env(seed=0, log_dir=None, vae=None):
         env = DonkeyVAEEnv(level=LEVEL, time_step=TIMESTEPS, frame_skip=FRAME_SKIP,
                            z_size=Z_SIZE, vae=vae, const_throttle=None,
                            min_throttle=MIN_THROTTLE, max_throttle=MAX_THROTTLE,
-                           max_cte_error=MAX_CTE_ERROR)
+                           max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY)
         env.seed(seed)
         env = Monitor(env, log_dir, allow_early_resets=True)
         return env

@@ -77,7 +77,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.sock = None
         self.loaded = False
         self.verbose = False
-        self.timer = FPSTimer(verbose=1)
+        self.timer = FPSTimer(verbose=0)
         self.max_cte_error = max_cte_error
 
         # sensor size - height, width, depth

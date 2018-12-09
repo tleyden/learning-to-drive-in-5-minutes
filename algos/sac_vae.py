@@ -12,7 +12,8 @@ from stable_baselines import logger
 class SACWithVAE(SAC):
     """docstring for SACWithVAE."""
     def learn(self, total_timesteps, callback=None, seed=None, vae=None,
-              skip_episodes=0, optimize_vae=False, min_throttle=0, writer=None, log_interval=1):
+              skip_episodes=0, optimize_vae=False, min_throttle=0, writer=None,
+              log_interval=1, print_freq=100):
         self._setup_learn(seed)
 
         start_time = time.time()
@@ -48,6 +49,9 @@ class SACWithVAE(SAC):
 
             new_obs, reward, done, info = self.env.step(rescaled_action)
             ep_len += 1
+
+            if print_freq > 0 and ep_len % print_freq == 0 and ep_len > 0:
+                print("{} steps".format(ep_len))
 
             # Store transition in the replay buffer.
             self.replay_buffer.add(obs, action, reward, new_obs, float(done))

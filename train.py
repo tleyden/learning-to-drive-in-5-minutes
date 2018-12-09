@@ -12,6 +12,8 @@ from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVe
 from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, OrnsteinUhlenbeckActionNoise
 from stable_baselines.ppo2.ppo2 import constfn
 
+from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
+    TIMESTEPS, MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY
 from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, BASE_ENV, ENV_ID, load_vae
 
 parser = argparse.ArgumentParser()
@@ -29,6 +31,8 @@ parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, de
 parser.add_argument('--save-vae', action='store_true', default=False,
                     help='Save VAE')
 parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
+parser.add_argument('--random-features', action='store_true', default=False,
+                    help='Use random features')
 args = parser.parse_args()
 
 set_global_seeds(args.seed)
@@ -45,6 +49,11 @@ vae = None
 if args.vae_path != '':
     print("Loading VAE ...")
     vae = load_vae(args.vae_path)
+elif args.random_features:
+    print("Randomly initialized VAE")
+    vae = load_vae()
+    # Save network
+    args.save_vae = True
 else:
     print("Learning from pixels...")
 
@@ -52,8 +61,14 @@ else:
 with open('hyperparams/{}.yml'.format(args.algo), 'r') as f:
     hyperparams = yaml.load(f)[BASE_ENV]
 
+
 # Sort hyperparams that will be saved
 saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyperparams.keys())])
+# save vae path
+saved_hyperparams['vae_path'] = args.vae_path
+# Save simulation params
+for key in SIM_PARAMS:
+    saved_hyperparams[key] = eval(key)
 pprint(saved_hyperparams)
 
 # Create learning rate schedules for ppo2

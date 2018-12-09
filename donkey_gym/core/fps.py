@@ -3,7 +3,7 @@ import time
 
 
 class FPSTimer(object):
-    def __init__(self, verbose=1):
+    def __init__(self, verbose=0):
         self.t = time.time()
         self.iter = 0
         self.verbose = verbose

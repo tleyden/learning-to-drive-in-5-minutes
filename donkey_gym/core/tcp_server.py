@@ -7,6 +7,15 @@ import socket
 
 
 def replace_float_notation(string):
+    """
+    Replace unity float notation for languages like
+    French or German that use comma instead of dot.
+    This convert the json sent by Unity to a valid one.
+    Ex: "test": 1,2, "key": 2 -> "test": 1.2, "key": 2
+
+    :param string: (str) The incorrect json string
+    :return: (str) Valid JSON string
+    """
     regex_french_notation = r'"[a-zA-Z_]+":(?P<num>[0-9,E-]+),'
     regex_end = r'"[a-zA-Z_]+":(?P<num>[0-9,E-]+)}'
 
@@ -14,7 +23,6 @@ def replace_float_notation(string):
         matches = re.finditer(regex, string, re.MULTILINE)
 
         for match in matches:
-            # start, end = match.start('num'), match.end('num')
             num = match.group('num').replace(',', '.')
             string = string.replace(match.group('num'), num)
     return string
@@ -192,6 +200,6 @@ class SimHandler(asyncore.dispatcher):
         if self.msg_handler:
             self.msg_handler.on_disconnect()
             self.msg_handler = None
-            print('connection dropped')
+            print('Connection dropped')
 
         self.close()
