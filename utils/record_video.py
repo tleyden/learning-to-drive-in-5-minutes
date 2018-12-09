@@ -71,6 +71,8 @@ for _ in range(video_length + 1):
         action = np.clip(action, env.action_space.low, env.action_space.high)
     obs, _, _, _ = env.step(action)
 
+# Reset car
+env.reset()
 # Workaround for https://github.com/openai/gym/issues/893
 env = env.venv
 # DummyVecEnv

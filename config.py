@@ -1,5 +1,6 @@
 CAMERA_HEIGHT = 120
 CAMERA_WIDTH = 160
+CAMERA_RESOLUTION = (CAMERA_WIDTH, CAMERA_HEIGHT)
 MARGIN_TOP = CAMERA_HEIGHT // 3
 # Region Of Interest
 # r = [margin_left, margin_top, width, height]

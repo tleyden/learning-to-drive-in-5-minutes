@@ -196,13 +196,18 @@ class DonkeyUnitySimHandler(IMesgHandler):
     def on_telemetry(self, data):
         img_string = data["image"]
         image = Image.open(BytesIO(base64.b64decode(img_string)))
-        # Crop image and resize image
-        r = ROI
+        # Resize and crop image
         image = np.array(image)
+        # Save original image for render
         self.original_image = np.copy(image)
+        # Resize if using higher resolution images
+        # image = cv2.resize(image, CAMERA_RESOLUTION)
+        # Region of interest
+        r = ROI
         image = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+        self.image_array = image
         # Here resize is not useful for now (the image have already the right dimension)
-        self.image_array = cv2.resize(np.array(image), (IMAGE_WIDTH, IMAGE_HEIGHT))
+        # self.image_array = cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT))
 
         # name of object we just hit. "none" if nothing.
         if self.hit == "none":
