@@ -1,9 +1,10 @@
 PyYAML
 mpi4py
-numpy==1.14.5
+numpy
 tensorflow==1.10.1
+pillow
 gym
 -e git+git@github.com:hill-a/stable-baselines.git@f4979b3c985eeba83df00ae410bc937a016ae296#egg=stable_baselines
 pytablewriter
--e git+git@github.com:araffin/donkey_gym.git@d834e596c085c43722a81397bd32758e02126861#egg=donkey_gym
 -e git+git@github.com:tawnkramer/donkey.git@faa4a32b2aff452c6b46474029ea9e4b3168843d#egg=donkeycar
+opencv-python

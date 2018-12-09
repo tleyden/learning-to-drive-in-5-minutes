@@ -1,3 +1,6 @@
+# Code adapted from https://github.com/araffin/rl-baselines-zoo
+# Author: Antonin Raffin
+
 import glob
 import os
 import time
@@ -15,8 +18,10 @@ from stable_baselines.sac.policies import FeedForwardPolicy as SACPolicy
 from stable_baselines.ddpg.policies import FeedForwardPolicy as DDPGPolicy
 
 from algos import DDPG, SAC
-from donkey_gym_wrapper.env import DonkeyVAEEnv
+from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from vae.controller import VAEController
+from config import MIN_THROTTLE, MAX_THROTTLE, MAX_CTE_ERROR, Z_SIZE, LEVEL, FRAME_SKIP, TIMESTEPS,\
+    BASE_ENV, ENV_ID
 
 ALGOS = {
     # 'a2c': A2C,
@@ -26,16 +31,6 @@ ALGOS = {
     'sac': SAC,
     'ppo2': PPO2
 }
-
-MIN_THROTTLE = 0.3
-MAX_THROTTLE = 0.6
-Z_SIZE = 512
-FRAME_SKIP = 2
-TIMESTEPS = 0.05
-MAX_CTE_ERROR = 3.0
-LEVEL = 0
-BASE_ENV = "DonkeyVae-v0"
-ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
 
 
 # ================== Custom Policies =================

@@ -1,3 +1,6 @@
+# Code adapted from https://github.com/araffin/rl-baselines-zoo
+# Author: Antonin Raffin
+
 import argparse
 import os
 

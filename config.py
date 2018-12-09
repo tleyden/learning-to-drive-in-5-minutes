@@ -1,0 +1,22 @@
+CAMERA_HEIGHT = 120
+CAMERA_WIDTH = 160
+MARGIN_TOP = CAMERA_HEIGHT // 3
+# Region Of Interest
+# r = [margin_left, margin_top, width, height]
+ROI = [0, MARGIN_TOP, CAMERA_WIDTH, CAMERA_HEIGHT - MARGIN_TOP]
+
+IMAGE_WIDTH = ROI[2]
+IMAGE_HEIGHT = ROI[3]
+N_CHANNELS = 3
+INPUT_DIM = (IMAGE_HEIGHT, IMAGE_WIDTH, N_CHANNELS)
+
+# Simulation config
+MIN_THROTTLE = 0.3
+MAX_THROTTLE = 0.6
+Z_SIZE = 512
+FRAME_SKIP = 2
+TIMESTEPS = 0.05
+MAX_CTE_ERROR = 3.0
+LEVEL = 0
+BASE_ENV = "DonkeyVae-v0"
+ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)

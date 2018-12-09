@@ -1,25 +1,18 @@
-# Copyright (c) 2018 Roma Sokolkov
-# MIT License
-
-"""
-Hijacked donkey_gym wrapper with VAE.
-
-- Use Z vector as observation space.
-- Store raw images in VAE buffer.
-
-Problem that DDPG already well implemented in stable-baselines
-and VAE integration will require full reimplementation of DDPG
-codebase. Instead we hijack VAE into gym environment.
-"""
-
+# Original author: Roma Sokolkov
+# Hijacked donkey_gym wrapper with VAE.
+#
+# - Use Z vector as observation space.
+# - Store raw images in VAE buffer.
 import os
 
 import numpy as np
 import gym
 from gym import spaces
-from donkey_gym.envs.donkey_env import DonkeyEnv
-from donkey_gym.envs.donkey_sim import DonkeyUnitySimContoller
-from donkey_gym.envs.donkey_proc import DonkeyUnityProcess
+
+from config import INPUT_DIM
+from .donkey_env import DonkeyEnv
+from .donkey_sim import DonkeyUnitySimContoller
+from .donkey_proc import DonkeyUnityProcess
 
 
 class DonkeyVAEEnv(DonkeyEnv):
@@ -77,9 +70,8 @@ class DonkeyVAEEnv(DonkeyEnv):
                                            high=np.array([1, 1]), dtype=np.float32)
 
         if vae is None:
-            height, width, n_channels = (80, 160, 3)
             self.observation_space = spaces.Box(low=0, high=255,
-                                                shape=(height, width, n_channels), dtype=np.uint8)
+                                                shape=INPUT_DIM, dtype=np.uint8)
         else:
             # z latent vector
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
@@ -124,6 +116,11 @@ class DonkeyVAEEnv(DonkeyEnv):
         self.prev_error = None
         observation, reward, done, info = self._observe()
         return observation
+
+    def render(self, mode='human'):
+        if mode == 'rgb_array':
+            return self.viewer.handler.original_image
+        return None
 
     def _observe(self):
         observation, reward, done, info = self.viewer.observe()
