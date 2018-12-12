@@ -73,6 +73,8 @@ for _ in range(video_length + 1):
 
 # Reset car
 env.reset()
+env.envs[0].env.exit_scene()
+
 # Workaround for https://github.com/openai/gym/issues/893
 env = env.venv
 # DummyVecEnv

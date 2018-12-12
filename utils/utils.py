@@ -20,8 +20,8 @@ from stable_baselines.ddpg.policies import FeedForwardPolicy as DDPGPolicy
 from algos import DDPG, SAC
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from vae.controller import VAEController
-from config import MIN_THROTTLE, MAX_THROTTLE, MAX_CTE_ERROR, Z_SIZE, LEVEL, FRAME_SKIP, TIMESTEPS,\
-    BASE_ENV, ENV_ID, N_COMMAND_HISTORY
+from config import MIN_THROTTLE, MAX_THROTTLE, MAX_CTE_ERROR, Z_SIZE, LEVEL, FRAME_SKIP,\
+    BASE_ENV, ENV_ID, N_COMMAND_HISTORY, TEST_FRAME_SKIP
 
 ALGOS = {
     # 'a2c': A2C,
@@ -68,7 +68,7 @@ def load_vae(path=None, z_size=512):
     return vae
 
 
-def make_env(seed=0, log_dir=None, vae=None):
+def make_env(seed=0, log_dir=None, vae=None, frame_skip=None):
     """
     Helper function to multiprocess training
     and log the progress.
@@ -77,13 +77,16 @@ def make_env(seed=0, log_dir=None, vae=None):
     :param log_dir: (str)
     :param vae: (str)
     """
+    if frame_skip is None:
+        frame_skip = FRAME_SKIP
+
     if log_dir is None and log_dir != '':
         log_dir = "/tmp/gym/{}/".format(int(time.time()))
     os.makedirs(log_dir, exist_ok=True)
 
     def _init():
         set_global_seeds(seed)
-        env = DonkeyVAEEnv(level=LEVEL, time_step=TIMESTEPS, frame_skip=FRAME_SKIP,
+        env = DonkeyVAEEnv(level=LEVEL, frame_skip=frame_skip,
                            z_size=Z_SIZE, vae=vae, const_throttle=None,
                            min_throttle=MIN_THROTTLE, max_throttle=MAX_THROTTLE,
                            max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY)
@@ -119,7 +122,8 @@ def create_test_env(stats_path=None, seed=0,
     if stats_path is not None and os.path.isfile(vae_path):
         vae = load_vae(vae_path)
 
-    env = DummyVecEnv([make_env(seed, log_dir, vae=vae)])
+    env = DummyVecEnv([make_env(seed, log_dir, vae=vae,
+                                frame_skip=TEST_FRAME_SKIP)])
 
     # Load saved stats for normalizing input and rewards
     # And optionally stack frames

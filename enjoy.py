@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import time
 
 import gym
 import numpy as np
@@ -93,8 +94,7 @@ for _ in range(args.n_timesteps):
         ep_len = 0
 
 env.reset()
-# Workaround for https://github.com/openai/gym/issues/893
-# Unwrap env
-while isinstance(env, VecNormalize) or isinstance(env, VecFrameStack):
-    env = env.venv
-env.envs[0].env.close()
+env.envs[0].env.exit_scene()
+# Close connection does work properly for now
+# env.envs[0].env.close_connection()
+time.sleep(0.5)

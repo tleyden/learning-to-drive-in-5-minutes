@@ -13,7 +13,7 @@ from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, Orn
 from stable_baselines.ppo2.ppo2 import constfn
 
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
-    TIMESTEPS, MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY
+    MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY
 from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, BASE_ENV, ENV_ID, load_vae
 
 parser = argparse.ArgumentParser()
@@ -160,7 +160,10 @@ if args.log_interval > -1:
 
 model.learn(n_timesteps, **kwargs)
 
+# Close the connection properly
 env.reset()
+# HACK to bypass Monitor wrapper
+env.envs[0].env.exit_scene()
 
 # Save trained model
 log_path = "{}/{}/".format(args.log_folder, args.algo)

@@ -13,20 +13,17 @@ from config import INPUT_DIM
 from .donkey_env import DonkeyEnv
 from .donkey_sim import DonkeyUnitySimContoller
 from .donkey_proc import DonkeyUnityProcess
+from config import MAX_STEERING
 
 
 class DonkeyVAEEnv(DonkeyEnv):
-    def __init__(self, level=0, time_step=0.05, frame_skip=2,
+    def __init__(self, level=0, frame_skip=2,
                  z_size=512, vae=None, const_throttle=None,
                  min_throttle=0.2, max_throttle=0.5,
                  max_cte_error=3.0, n_command_history=0):
         # super().__init__(level, time_step, frame_skip)
         self.z_size = z_size
         self.vae = vae
-        # PID
-        # self.k_p = 0.4 # P factor
-        # self.k_d = 0.1
-        # self.prev_error = None
 
         self.const_throttle = const_throttle
         self.min_throttle = min_throttle
@@ -63,16 +60,17 @@ class DonkeyVAEEnv(DonkeyEnv):
         self.proc.start(exe_path, headless=headless, port=port)
 
         # start simulation com
-        self.viewer = DonkeyUnitySimContoller(level=level, time_step=time_step,
-                                              port=port, max_cte_error=max_cte_error)
+        self.viewer = DonkeyUnitySimContoller(level=level, port=port, max_cte_error=max_cte_error)
 
         if const_throttle is not None:
             # steering only
-            self.action_space = spaces.Box(low=np.array([-1]), high=np.array([1]), dtype=np.float32)
+            self.action_space = spaces.Box(low=np.array([-MAX_STEERING]),
+                                           high=np.array([MAX_STEERING]),
+                                           dtype=np.float32)
         else:
             # steering + throttle, action space must be symmetric
-            self.action_space = spaces.Box(low=np.array([-1, -1]),
-                                           high=np.array([1, 1]), dtype=np.float32)
+            self.action_space = spaces.Box(low=np.array([-MAX_STEERING, -1]),
+                                           high=np.array([MAX_STEERING, 1]), dtype=np.float32)
 
         if vae is None:
             assert n_command_history == 0, 'n_command_history not supported for images'
@@ -94,26 +92,24 @@ class DonkeyVAEEnv(DonkeyEnv):
         # wait until loaded
         self.viewer.wait_until_loaded()
 
+    def close_connection(self):
+        return self.viewer.close_connection()
+
+    def exit_scene(self):
+        self.viewer.handler.send_exit_scene()
+
     def step(self, action):
-        # error = current_theta - action
-        # error_d = 0.0
-        # if self.prev_error is not None:
-        #     error_d = (error - self.prev_error)
-        #
-        # command = self.k_p * error + self.k_d * error_d
-        # self.prev_error = error
-        # print("action=", action[0])
         if self.const_throttle is not None:
             action = np.concatenate([action, [self.const_throttle]])
         else:
             # Convert from [-1, 1] to [0, 1]
             t = (action[1] + 1) / 2
             # Convert from [0, 1] to [min, max]
-            action[1] = (1 - t) * self. min_throttle + self.max_throttle * t
+            action[1] = (1 - t) * self.min_throttle + self.max_throttle * t
 
 
-        for _ in range(self.frame_skip):
-            self.viewer.take_action(action)
+        for repeat_idx in range(self.frame_skip):
+            self.viewer.take_action(action, repeat_idx=repeat_idx)
             observation, reward, done, info = self._observe()
 
         # Update command history

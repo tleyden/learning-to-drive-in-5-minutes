@@ -70,6 +70,7 @@ class SimServer(asyncore.dispatcher):
 
         # keep a pointer to our IMesgHandler handler
         self.msg_handler = msg_handler
+        self.sim_handler = None
 
     def handle_accept(self):
         # Called when a client connects to our socket
@@ -78,15 +79,18 @@ class SimServer(asyncore.dispatcher):
         print('Got a new client', client_info[1])
 
         # make a new steering handler to communicate with the client
-        SimHandler(sock=client_info[0], msg_handler=self.msg_handler)
+        self.sim_handler = SimHandler(sock=client_info[0], msg_handler=self.msg_handler)
 
     def handle_close(self):
         print("Server shutdown")
         # Called then server is shutdown
         self.close()
 
-        if self.msg_handler:
+        if self.msg_handler is not None:
             self.msg_handler.on_close()
+
+        if self.sim_handler is not None:
+            self.sim_handler.handle_close()
 
 
 class SimHandler(asyncore.dispatcher):
@@ -197,7 +201,7 @@ class SimHandler(asyncore.dispatcher):
 
     def handle_close(self):
         # when client drops or closes connection
-        if self.msg_handler:
+        if self.msg_handler is not None:
             self.msg_handler.on_disconnect()
             self.msg_handler = None
             print('Connection dropped')

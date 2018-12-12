@@ -13,15 +13,15 @@ from PIL import Image
 
 from donkey_gym.core.fps import FPSTimer
 from donkey_gym.core.tcp_server import IMesgHandler, SimServer
-from config import INPUT_DIM, IMAGE_WIDTH, IMAGE_HEIGHT, ROI
+from config import INPUT_DIM, IMAGE_WIDTH, IMAGE_HEIGHT, ROI, THROTTLE_REWARD_WEIGHT,\
+    MAX_THROTTLE, JERK_REWARD_WEIGHT, MIN_STEERING, MAX_STEERING
 
 
 
 class DonkeyUnitySimContoller:
 
-    def __init__(self, level, time_step=0.05, port=9090, max_cte_error=3.0):
+    def __init__(self, level, port=9090, max_cte_error=3.0):
         self.level = level
-        self.time_step = time_step
         self.verbose = False
         self.wait_time_for_obs = 0.1
 
@@ -30,12 +30,15 @@ class DonkeyUnitySimContoller:
 
         self.address = ('0.0.0.0', port)
 
-        self.handler = DonkeyUnitySimHandler(level, time_step=time_step, max_cte_error=max_cte_error)
+        self.handler = DonkeyUnitySimHandler(level, max_cte_error=max_cte_error)
         self.server = SimServer(self.address, self.handler)
 
         self.thread = Thread(target=asyncore.loop)
         self.thread.daemon = True
         self.thread.start()
+
+    def close_connection(self):
+        return self.server.handle_close()
 
     def wait_until_loaded(self):
         while not self.handler.loaded:
@@ -48,8 +51,8 @@ class DonkeyUnitySimContoller:
     def get_sensor_size(self):
         return self.handler.get_sensor_size()
 
-    def take_action(self, action):
-        self.handler.take_action(action)
+    def take_action(self, action, repeat_idx=0):
+        self.handler.take_action(action, repeat_idx)
 
     def observe(self):
         return self.handler.observe()
@@ -68,11 +71,8 @@ class DonkeyUnitySimContoller:
 
 
 class DonkeyUnitySimHandler(IMesgHandler):
-    FPS = 60.0
-
-    def __init__(self, level, time_step=0.05, max_cte_error=3.0):
+    def __init__(self, level, max_cte_error=3.0):
         self.level_idx = level
-        self.time_step = time_step
         self.wait_time_for_obs = 0.1
         self.sock = None
         self.loaded = False
@@ -94,7 +94,8 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.steering_angle  = 0.0
         self.current_step = 0
         self.speed = 0
-        # self.error_too_high = False
+        self.steering = None
+        self.prev_steering = None
 
         self.fns = {'telemetry': self.on_telemetry,
                     "scene_selection_ready": self.on_scene_selection_ready,
@@ -105,6 +106,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.sock = socket_handler
 
     def on_disconnect(self):
+        self.sock.close()
         self.sock = None
 
     def on_recv_message(self, message):
@@ -139,17 +141,19 @@ class DonkeyUnitySimHandler(IMesgHandler):
     def get_sensor_size(self):
         return self.camera_img_size
 
-    def take_action(self, action):
+    def take_action(self, action, repeat_idx=0):
         if self.verbose:
             print("take_action")
 
-        # Static throttle
-        # throttle = 0.5
         throttle = action[1]
+        # Do not update prev_steering if using frame skip
+        if repeat_idx == 0:
+            self.prev_steering = self.steering
+        self.steering = action[0]
         self.last_throttle = throttle
         self.current_step += 1
 
-        self.send_control(action[0], throttle)
+        self.send_control(self.steering, throttle)
 
     def observe(self):
         while self.last_obs is self.image_array:
@@ -159,8 +163,6 @@ class DonkeyUnitySimHandler(IMesgHandler):
         observation = self.image_array
         done = self.is_game_over()
         reward = self.calc_reward(done)
-        # info = {'error_too_high': self.error_too_high}
-        # info = {'original_image': self.original_image}
         info = {}
 
         self.timer.on_frame()
@@ -168,15 +170,6 @@ class DonkeyUnitySimHandler(IMesgHandler):
         return observation, reward, done, info
 
     def is_game_over(self):
-        # Workaround for big error at start.
-        # if math.fabs(self.cte) > 2 * self.max_cte_error and self.current_step < 10:
-        #     print("Too high error, ignoring {:.2f}".format(self.cte))
-        #     self.error_too_high = True
-        #     # self.send_get_scene_names()
-        #     # self.send_load_scene("generated_road")
-        #     # self.send_load_scene("warehouse")
-        #     return False
-        # self.error_too_high = False
         return self.hit != "none" or math.fabs(self.cte) > self.max_cte_error
 
     # ------ RL interface ----------- #
@@ -188,8 +181,14 @@ class DonkeyUnitySimHandler(IMesgHandler):
             return -1
         # 1 per timesteps + velocity
         # TODO: use real speed + jerk penalty
-        velocity = self.last_throttle * (1.0 / self.FPS)
-        return 1 + velocity
+        throttle_reward = THROTTLE_REWARD_WEIGHT * (self.last_throttle / MAX_THROTTLE)
+        jerk_penalty = 0
+        if self.prev_steering is not None:
+            steering_diff = (self.prev_steering - self.steering) / (MAX_STEERING - MIN_STEERING)
+            jerk_penalty = JERK_REWARD_WEIGHT * (steering_diff ** 2)
+            # print(jerk_penalty)
+            # print('reward', 1 + throttle_reward, 1 + throttle_reward - jerk_penalty)
+        return 1 + throttle_reward - jerk_penalty
 
     # ------ Socket interface ----------- #
 
@@ -260,6 +259,10 @@ class DonkeyUnitySimHandler(IMesgHandler):
 
     def send_load_scene(self, scene_name):
         msg = {'msg_type': 'load_scene', 'scene_name': scene_name}
+        self.queue_message(msg)
+
+    def send_exit_scene(self):
+        msg = {'msg_type': 'exit_scene'}
         self.queue_message(msg)
 
     def queue_message(self, msg):
