@@ -1,9 +1,6 @@
-# Copyright (c) 2018 Roma Sokolkov
-# MIT License
+# Orignal author: Roma Sokolkov
+# VAE controller for runtime optimization.
 
-"""
-VAE controller for runtime optimization.
-"""
 
 import numpy as np
 
@@ -39,14 +36,12 @@ class VAEController:
                            learning_rate=self.learning_rate,
                            kl_tolerance=self.kl_tolerance,
                            is_training=True,
-                           reuse=False,
-                           gpu_mode=True)
+                           reuse=False)
 
         self.target_vae = ConvVAE(z_size=self.z_size,
                                   batch_size=1,
                                   is_training=False,
-                                  reuse=False,
-                                  gpu_mode=True)
+                                  reuse=False)
 
     def buffer_append(self, arr):
         assert arr.shape == self.image_size
@@ -73,7 +68,7 @@ class VAEController:
     def encode(self, arr):
         assert arr.shape == self.image_size
         # Normalize
-        arr = arr.astype(np.float)/255.0
+        arr = arr.astype(np.float) / 255.0
         # Reshape
         arr = arr.reshape(1,
                           self.image_size[0],
@@ -91,16 +86,16 @@ class VAEController:
 
     def optimize(self):
         ds = self.buffer_get_copy()
-        # TODO: may be do buffer reset.
+        # TODO: maybe do buffer reset.
         # self.buffer_reset()
 
-        num_batches = int(np.floor(len(ds)/self.batch_size))
+        num_batches = int(np.floor(len(ds) / self.batch_size))
 
         for epoch in range(self.epoch_per_optimization):
             np.random.shuffle(ds)
             for idx in range(num_batches):
                 batch = ds[idx * self.batch_size:(idx + 1) * self.batch_size]
-                obs = batch.astype(np.float) / 255.0
+                obs = batch.astype(np.float32) / 255.0
                 feed = {self.vae.x: obs, }
                 (train_loss, r_loss, kl_loss, train_step, _) = self.vae.sess.run([
                     self.vae.loss,
@@ -115,11 +110,17 @@ class VAEController:
         self.set_target_params()
 
     def save(self, path):
-        self.target_vae.save_json(path)
+        self.target_vae.save(path)
 
     def load(self, path):
+        self.target_vae = ConvVAE.load(path)
+
+    def save_json(self, path):
+        self.target_vae.save_json(path)
+
+    def load_json(self, path):
         self.target_vae.load_json(path)
 
     def set_target_params(self):
-        params, _, _ = self.vae.get_model_params()
-        self.target_vae.set_model_params(params)
+        params = self.vae.get_params()
+        self.target_vae.set_params(params)

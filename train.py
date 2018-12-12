@@ -162,6 +162,8 @@ model.learn(n_timesteps, **kwargs)
 
 # Close the connection properly
 env.reset()
+if isinstance(env, VecFrameStack):
+    env = env.venv
 # HACK to bypass Monitor wrapper
 env.envs[0].env.exit_scene()
 
@@ -179,7 +181,7 @@ with open(os.path.join(params_path, 'config.yml'), 'w') as f:
 
 if args.save_vae and vae is not None:
     print("Saving VAE")
-    vae.save(os.path.join(params_path, 'vae.json'))
+    vae.save(os.path.join(params_path, 'vae'))
 
 if normalize:
     # Unwrap
