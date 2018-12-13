@@ -5,20 +5,20 @@ import numpy as np
 import tensorflow as tf
 from stable_baselines import SAC, logger
 from stable_baselines.common.vec_env import VecEnv
-from stable_baselines.ppo2.ppo2 import safe_mean
+from stable_baselines.ppo2.ppo2 import safe_mean, get_schedule_fn
 from stable_baselines import logger
 
 
 class SACWithVAE(SAC):
     """docstring for SACWithVAE."""
-    def optimize(self, step, writer):
+    def optimize(self, step, writer, current_lr):
         mb_infos_vals = []
         for grad_step in range(self.gradient_steps):
             if step < self.batch_size or step < self.learning_starts:
                 break
             self.n_updates += 1
             # Update policy and critics (q functions)
-            mb_infos_vals.append(self._train_step(step, writer))
+            mb_infos_vals.append(self._train_step(step, writer, current_lr))
 
             if (step + grad_step) % self.target_update_interval == 0:
                 # Update target network
@@ -29,6 +29,9 @@ class SACWithVAE(SAC):
               skip_episodes=0, optimize_vae=False, min_throttle=0, writer=None,
               log_interval=1, print_freq=100):
         self._setup_learn(seed)
+
+        # Transform to callable if needed
+        self.learning_rate = get_schedule_fn(self.learning_rate)
 
         start_time = time.time()
         episode_rewards = [0.0]
@@ -41,6 +44,10 @@ class SACWithVAE(SAC):
         mb_infos_vals = []
 
         for step in range(total_timesteps):
+            # Compute current learning_rate
+            frac = 1.0 - step / total_timesteps
+            current_lr = self.learning_rate(frac)
+
             if callback is not None:
                 # Only stop training if return value is False, not when it is None. This is for backwards
                 # compatibility with callbacks that have no return statement.
@@ -84,7 +91,7 @@ class SACWithVAE(SAC):
 
             if ep_len > self.train_freq:
                 print("Additional training")
-                mb_infos_vals = self.optimize(step, writer)
+                mb_infos_vals = self.optimize(step, writer, current_lr)
                 self.env.reset()
                 done = True
 
@@ -93,13 +100,10 @@ class SACWithVAE(SAC):
                 if not isinstance(self.env, VecEnv):
                     obs = self.env.reset()
 
-                # Prevent the car from moving during training
-                # self.env.step([0.0, -min_throttle])
-
-                print("Episode finished. Reward: {:.2f}".format(episode_rewards[-1]))
+                print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
                 episode_rewards.append(0.0)
                 ep_len = 0
-                mb_infos_vals = self.optimize(step, writer)
+                mb_infos_vals = self.optimize(step, writer, current_lr)
 
 
             # Log losses and entropy, useful for monitor training
@@ -119,6 +123,7 @@ class SACWithVAE(SAC):
                 logger.logkv('ep_rewmean', safe_mean([ep_info['r'] for ep_info in ep_info_buf]))
                 logger.logkv('eplenmean', safe_mean([ep_info['l'] for ep_info in ep_info_buf]))
                 logger.logkv("n_updates", self.n_updates)
+                logger.logkv("current_lr", current_lr)
                 logger.logkv("fps", fps)
                 logger.logkv('time_elapsed', "{:.2f}".format(time.time() - start_time))
                 if len(infos_values) > 0:
@@ -131,5 +136,5 @@ class SACWithVAE(SAC):
         # Use last batch
         print("Final optimization before saving")
         self.env.reset()
-        mb_infos_vals = self.optimize(step, writer)
+        mb_infos_vals = self.optimize(step, writer, current_lr)
         return self

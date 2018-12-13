@@ -185,6 +185,9 @@ class DonkeyUnitySimHandler(IMesgHandler):
         jerk_penalty = 0
         if self.prev_steering is not None:
             steering_diff = (self.prev_steering - self.steering) / (MAX_STEERING - MIN_STEERING)
+            # jerk_penalty = 1 - np.exp(- steering_diff ** 2 / (2 * JERK_SIGMA ** 2))
+            # jerk_penalty *= JERK_REWARD_WEIGHT
+            # print(jerk_penalty)
             jerk_penalty = JERK_REWARD_WEIGHT * (steering_diff ** 2)
             # print(jerk_penalty)
             # print('reward', 1 + throttle_reward, 1 + throttle_reward - jerk_penalty)

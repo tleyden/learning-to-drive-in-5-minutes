@@ -2,7 +2,8 @@ DonkeyVae-v0:
   # normalize: "{'norm_obs': True, 'norm_reward': False}"
   n_timesteps: !!float 5000
   policy: 'CustomSACPolicy'
-  learning_rate: !!float 3e-3
+  # learning_rate: !!float 3e-3
+  learning_rate: lin_3e-3
   buffer_size: 10000
   batch_size: 64
   train_freq: 2500

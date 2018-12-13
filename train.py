@@ -71,8 +71,8 @@ for key in SIM_PARAMS:
     saved_hyperparams[key] = eval(key)
 pprint(saved_hyperparams)
 
-# Create learning rate schedules for ppo2
-if args.algo == "ppo2":
+# Create learning rate schedules for ppo2 and sac
+if args.algo in ["ppo2", "sac"]:
     for key in ['learning_rate', 'cliprange']:
         if key not in hyperparams:
             continue
