@@ -5,8 +5,9 @@ import time
 import pygame
 from pygame.locals import *
 
-from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE, LEVEL
+from config import MIN_STEERING, MAX_STEERING, MAX_THROTTLE, LEVEL
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
+from .recorder import Recorder
 
 UP = (1, 0)
 LEFT = (0, 1)
@@ -26,6 +27,7 @@ RED = (205, 39, 46)
 GREY = (187, 179, 179)
 BLACK = (36, 36, 36)
 WHITE = (230, 230, 230)
+ORANGE = (200, 110, 0)
 
 moveBindingsGame = {
     K_UP: UP,
@@ -33,6 +35,11 @@ moveBindingsGame = {
     K_RIGHT: RIGHT,
     K_DOWN: DOWN
 }
+
+pygame.font.init()
+FONT = pygame.font.SysFont('Open Sans', 25)
+SMALL_FONT = pygame.font.SysFont('Open Sans', 20)
+KEY_MIN_DELAY = 0.2
 
 
 def control(x, theta, control_throttle, control_turn):
@@ -63,42 +70,54 @@ def control(x, theta, control_throttle, control_turn):
     return control_throttle, control_turn
 
 
+def write_text(screen, text, x, y, font, color=GREY):
+    text = str(text)
+    text = font.render(text, True, color)
+    screen.blit(text, (x, y))
+
+
+def clear(window):
+    window.fill((0, 0, 0))
+
+
+def update_screen(window, throttle, turn, is_recording, is_manual):
+    clear(window)
+    write_text(window, 'Throttle: {:.2f}, Angular: {:.2f}'.format(throttle, turn), 20, 0, FONT, WHITE)
+    help_str = 'Use arrow keys to move, q or ESCAPE to exit.'
+    write_text(window, help_str, 20, 50, SMALL_FONT)
+    # help_2 = 'space key, k : force stop ---  anything else : stop smoothly'
+    # write_text(window, help_2, 20, 100, SMALL_FONT)
+    write_text(window, 'Status:', 20, 150, SMALL_FONT, WHITE)
+
+    if is_recording:
+        text, text_color = 'RECORDING', RED
+    else:
+        text, text_color = 'NOT RECORDING', GREEN
+
+    write_text(window, text, 100, 150, SMALL_FONT, text_color)
+
+    write_text(window, 'Mode:', 20, 200, SMALL_FONT, WHITE)
+    if is_manual:
+        text, text_color = 'MANUAL', GREEN
+    else:
+        text, text_color = 'AUTONOMOUS', ORANGE
+
+    write_text(window, text, 100, 200, SMALL_FONT, text_color)
+
+
 def pygame_main(env):
     # Pygame require a window
     pygame.init()
     window = pygame.display.set_mode((800, 500), RESIZABLE)
-    pygame.font.init()
-    font = pygame.font.SysFont('Open Sans', 25)
-    small_font = pygame.font.SysFont('Open Sans', 20)
+
     end = False
     is_recording = False
-
-    def write_text(screen, text, x, y, font, color=GREY):
-        text = str(text)
-        text = font.render(text, True, color)
-        screen.blit(text, (x, y))
-
-    def clear():
-        window.fill((0, 0, 0))
-
-    def update_screen(window, throttle, turn):
-        clear()
-        write_text(window, 'Throttle: {:.2f}, Angular: {:.2f}'.format(throttle, turn), 20, 0, font, WHITE)
-        help_str = 'Use arrow keys to move, q or ESCAPE to exit.'
-        write_text(window, help_str, 20, 50, small_font)
-        # help_2 = 'space key, k : force stop ---  anything else : stop smoothly'
-        # write_text(window, help_2, 20, 100, small_font)
-        write_text(window, 'Status:', 20, 150, small_font, WHITE)
-        if is_recording:
-            text, color = 'RECORDING', GREEN
-        else:
-            text, color = 'NOT RECORDING', RED
-        write_text(window, text, 100, 150, small_font, color)
+    is_manual = True
 
     control_throttle, control_turn = 0, 0
-    update_screen(window, control_throttle, control_turn)
+    update_screen(window, control_throttle, control_turn, is_recording, is_manual)
 
-    last_time_pressed = 0
+    last_time_pressed = {'space': 0, 'm': 0}
 
     while not end:
         x, theta = 0, 0
@@ -109,23 +128,29 @@ def pygame_main(env):
                 x += x_tmp
                 theta += th_tmp
 
-        if keys[K_SPACE] and (time.time() - last_time_pressed) > 0.2:
+        if keys[K_SPACE] and (time.time() - last_time_pressed['space']) > KEY_MIN_DELAY:
             is_recording = not is_recording
+            env.toggle_recording()
             # avoid multiple key press
-            last_time_pressed = time.time()
+            last_time_pressed['space'] = time.time()
+
+        if keys[K_m] and (time.time() - last_time_pressed['m']) > KEY_MIN_DELAY:
+            is_manual = not is_manual
+            # avoid multiple key press
+            last_time_pressed['m'] = time.time()
 
         if keys[K_r]:
-            obs = env.reset()
+            _ = env.reset()
 
         if keys[K_l]:
-            obs = env.reset()
+            _ = env.reset()
             env.exit_scene()
 
         control_throttle, control_turn = control(x, theta, control_throttle, control_turn)
         # Send Orders
         angle_order = send_command(env, control_throttle, control_turn)
 
-        update_screen(window, control_throttle, angle_order)
+        update_screen(window, control_throttle, angle_order, is_recording, is_manual)
 
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.key in [K_ESCAPE, K_q]:
@@ -155,6 +180,7 @@ if __name__ == '__main__':
                        z_size=0, vae=None, const_throttle=None,
                        min_throttle=0, max_throttle=MAX_THROTTLE,
                        max_cte_error=10, n_command_history=0)
+    env = Recorder(env, verbose=1)
     env.reset()
     try:
         pygame_main(env)
