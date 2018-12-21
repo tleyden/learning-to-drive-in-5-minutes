@@ -63,6 +63,7 @@ register_policy('CustomMlpPolicy', CustomMlpPolicy)
 
 def load_vae(path=None, z_size=512):
     vae = VAEController(z_size=z_size)
+    print("Dim VAE = {}".format(z_size))
     if path is not None:
         if path.endswith('.json'):
             vae.load_json(path)
@@ -124,7 +125,7 @@ def create_test_env(stats_path=None, seed=0,
         vae_path = os.path.join(stats_path, 'vae.pkl')
     vae = None
     if stats_path is not None and (os.path.isfile(vae_path) or os.path.isfile(vae_path_json)):
-        vae = load_vae(vae_path)
+        vae = load_vae(vae_path, z_size=Z_SIZE)
 
     env = DummyVecEnv([make_env(seed, log_dir, vae=vae,
                                 frame_skip=TEST_FRAME_SKIP)])

@@ -13,7 +13,7 @@ from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, Orn
 from stable_baselines.ppo2.ppo2 import constfn
 
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
-    MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY
+    MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY, Z_SIZE
 from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, BASE_ENV, ENV_ID, load_vae
 
 parser = argparse.ArgumentParser()
@@ -48,10 +48,10 @@ print("=" * 10, ENV_ID, args.algo, "=" * 10)
 vae = None
 if args.vae_path != '':
     print("Loading VAE ...")
-    vae = load_vae(args.vae_path)
+    vae = load_vae(args.vae_path, z_size=Z_SIZE)
 elif args.random_features:
     print("Randomly initialized VAE")
-    vae = load_vae()
+    vae = load_vae(z_size=Z_SIZE)
     # Save network
     args.save_vae = True
 else:
