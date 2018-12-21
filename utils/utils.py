@@ -21,7 +21,7 @@ from algos import DDPG, SAC
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from vae.controller import VAEController
 from config import MIN_THROTTLE, MAX_THROTTLE, MAX_CTE_ERROR, Z_SIZE, LEVEL, FRAME_SKIP,\
-    BASE_ENV, ENV_ID, N_COMMAND_HISTORY, TEST_FRAME_SKIP
+    N_COMMAND_HISTORY, TEST_FRAME_SKIP
 
 ALGOS = {
     # 'a2c': A2C,
