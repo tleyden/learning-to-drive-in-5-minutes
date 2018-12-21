@@ -14,7 +14,7 @@ from utils.utils import ALGOS, create_test_env, get_latest_run_id, get_saved_hyp
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs')
-parser.add_argument('--algo', help='RL Algorithm', default='ppo2',
+parser.add_argument('--algo', help='RL Algorithm', default='sac',
                     type=str, required=False, choices=list(ALGOS.keys()))
 parser.add_argument('-n', '--n-timesteps', help='number of timesteps', default=1000,
                     type=int)

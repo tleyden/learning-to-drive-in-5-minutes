@@ -1,12 +1,16 @@
 # Adapted from https://github.com/sergionr2/RacingRobot
 # Author: Antonin Raffin
+import os
 import time
+import argparse
 
 import pygame
 from pygame.locals import *
 
-from config import MIN_STEERING, MAX_STEERING, MAX_THROTTLE, LEVEL
+from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE,\
+    LEVEL, Z_SIZE, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
+from utils.utils import ALGOS, get_latest_run_id, load_vae
 from .recorder import Recorder
 
 UP = (1, 0)
@@ -80,13 +84,14 @@ def clear(window):
     window.fill((0, 0, 0))
 
 
-def update_screen(window, throttle, turn, is_recording, is_manual):
+def update_screen(window, action, is_recording, is_manual):
     clear(window)
+    turn, throttle = action
     write_text(window, 'Throttle: {:.2f}, Angular: {:.2f}'.format(throttle, turn), 20, 0, FONT, WHITE)
     help_str = 'Use arrow keys to move, q or ESCAPE to exit.'
     write_text(window, help_str, 20, 50, SMALL_FONT)
-    # help_2 = 'space key, k : force stop ---  anything else : stop smoothly'
-    # write_text(window, help_2, 20, 100, SMALL_FONT)
+    help_2 = 'space key: toggle recording -- m: change mode -- r: reset -- l: reset track'
+    write_text(window, help_2, 20, 100, SMALL_FONT)
     write_text(window, 'Status:', 20, 150, SMALL_FONT, WHITE)
 
     if is_recording:
@@ -105,7 +110,7 @@ def update_screen(window, throttle, turn, is_recording, is_manual):
     write_text(window, text, 100, 200, SMALL_FONT, text_color)
 
 
-def pygame_main(env):
+def pygame_main(env, model=None):
     # Pygame require a window
     pygame.init()
     window = pygame.display.set_mode((800, 500), RESIZABLE)
@@ -115,9 +120,11 @@ def pygame_main(env):
     is_manual = True
 
     control_throttle, control_turn = 0, 0
-    update_screen(window, control_throttle, control_turn, is_recording, is_manual)
+    action = [control_turn, control_throttle]
+    update_screen(window, action, is_recording, is_manual)
 
     last_time_pressed = {'space': 0, 'm': 0}
+    obs = env.reset()
 
     while not end:
         x, theta = 0, 0
@@ -140,17 +147,17 @@ def pygame_main(env):
             last_time_pressed['m'] = time.time()
 
         if keys[K_r]:
-            _ = env.reset()
+            obs = env.reset()
 
         if keys[K_l]:
-            _ = env.reset()
+            obs = env.reset()
             env.exit_scene()
 
         control_throttle, control_turn = control(x, theta, control_throttle, control_turn)
         # Send Orders
-        angle_order = send_command(env, control_throttle, control_turn)
+        action, obs = send_command(env, control_throttle, control_turn, obs, is_manual, model)
 
-        update_screen(window, control_throttle, angle_order, is_recording, is_manual)
+        update_screen(window, action, is_recording, is_manual)
 
         for event in pygame.event.get():
             if event.type == QUIT or event.type == KEYDOWN and event.key in [K_ESCAPE, K_q]:
@@ -160,30 +167,75 @@ def pygame_main(env):
         pygame.time.Clock().tick(1 / TELEOP_RATE)
 
 
-def send_command(env, control_throttle, control_turn):
+def send_command(env, control_throttle, control_turn, obs, is_manual, model=None):
     """
     :param env: (Gym env)
     :param control_throttle: (float)
     :param control_turn: (float)
+    :param obs: (np.ndarray)
+    :param is_manual: (bool)
+    :param model: (RL object)
     """
-    # Send Orders
-    t = (control_turn + MAX_TURN) / (2 * MAX_TURN)
-    angle_order = MIN_STEERING * t + MAX_STEERING * (1 - t)
-    # TODO sen command
-    action = [angle_order, control_throttle]
-    _, _, _, _ = env.step(action)
-    return angle_order
+    if model is None or is_manual:
+        # Send Orders
+        t = (control_turn + MAX_TURN) / (2 * MAX_TURN)
+        angle_order = MIN_STEERING * t + MAX_STEERING * (1 - t)
+        action = [angle_order, control_throttle]
+    else:
+        action, _ = model.predict(obs)
+
+    obs, _, _, _ = env.step(action)
+    return action, obs
 
 
 if __name__ == '__main__':
-    env = DonkeyVAEEnv(level=LEVEL, frame_skip=1,
-                       z_size=0, vae=None, const_throttle=None,
-                       min_throttle=0, max_throttle=MAX_THROTTLE,
-                       max_cte_error=10, n_command_history=0)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs')
+    parser.add_argument('--algo', help='RL Algorithm', default='',
+                        type=str, required=False, choices=list(ALGOS.keys()))
+    parser.add_argument('-n', '--n-timesteps', help='number of timesteps', default=1000,
+                        type=int)
+    parser.add_argument('--exp-id', help='Experiment ID (-1: no exp folder, 0: latest)', default=0,
+                        type=int)
+    parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
+    args = parser.parse_args()
+
+    algo = args.algo
+    folder = args.folder
+    model = None
+    vae = None
+
+    if algo != '':
+        if args.exp_id == 0:
+            args.exp_id = get_latest_run_id(os.path.join(folder, algo), ENV_ID)
+            print('Loading latest experiment, id={}'.format(args.exp_id))
+
+        # Sanity checks
+        if args.exp_id > 0:
+            log_path = os.path.join(folder, algo, '{}_{}'.format(ENV_ID, args.exp_id))
+        else:
+            log_path = os.path.join(folder, algo)
+
+        model_path = "{}/{}.pkl".format(log_path, ENV_ID)
+
+        assert os.path.isdir(log_path), "The {} folder was not found".format(log_path)
+        assert os.path.isfile(model_path), "No model found for {} on {}, path: {}".format(algo, ENV_ID, model_path)
+        model = ALGOS[algo].load(model_path)
+
+        if args.vae_path != '':
+            print("Loading VAE ...")
+            vae = load_vae(args.vae_path, z_size=Z_SIZE)
+
+    if vae is None:
+        N_COMMAND_HISTORY = 0
+
+    env = DonkeyVAEEnv(level=LEVEL, frame_skip=TEST_FRAME_SKIP,
+                       z_size=Z_SIZE, vae=vae, const_throttle=None,
+                       min_throttle=MIN_THROTTLE, max_throttle=MAX_THROTTLE,
+                       max_cte_error=10, n_command_history=N_COMMAND_HISTORY)
     env = Recorder(env, verbose=1)
-    env.reset()
     try:
-        pygame_main(env)
+        pygame_main(env, model=model)
     except KeyboardInterrupt as e:
         pass
     finally:

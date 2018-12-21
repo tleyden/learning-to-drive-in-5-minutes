@@ -13,14 +13,14 @@ from stable_baselines.ddpg import AdaptiveParamNoiseSpec, NormalActionNoise, Orn
 from stable_baselines.ppo2.ppo2 import constfn
 
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
-    MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY, Z_SIZE
-from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, BASE_ENV, ENV_ID, load_vae
+    MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY, Z_SIZE, BASE_ENV, ENV_ID
+from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, load_vae
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='', type=str)
 parser.add_argument('-i', '--trained-agent', help='Path to a pretrained agent to continue training',
                     default='', type=str)
-parser.add_argument('--algo', help='RL Algorithm', default='ppo2',
+parser.add_argument('--algo', help='RL Algorithm', default='sac',
                     type=str, required=False, choices=list(ALGOS.keys()))
 parser.add_argument('-n', '--n-timesteps', help='Overwrite the number of timesteps', default=-1,
                     type=int)
