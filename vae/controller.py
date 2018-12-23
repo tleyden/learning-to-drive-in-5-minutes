@@ -5,6 +5,7 @@
 import numpy as np
 
 from .model import ConvVAE
+from .data_loader import denormalize, preprocess_input
 
 
 class VAEController:
@@ -78,12 +79,7 @@ class VAEController:
     def encode(self, arr):
         assert arr.shape == self.image_size
         # Normalize
-        arr = arr.astype(np.float) / 255.0
-        # Reshape
-        arr = arr.reshape(1,
-                          self.image_size[0],
-                          self.image_size[1],
-                          self.image_size[2])
+        arr = preprocess_input(arr.astype(np.float32), mode="rl")[None]
         return self.target_vae.encode(arr)
 
     def decode(self, arr):
@@ -91,7 +87,7 @@ class VAEController:
         # Decode
         arr = self.target_vae.decode(arr)
         # Denormalize
-        arr = arr * 255.0
+        arr = denormalize(arr, mode="rl")
         return arr
 
     def optimize(self):

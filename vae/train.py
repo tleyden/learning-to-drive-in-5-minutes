@@ -1,12 +1,14 @@
 import argparse
 import os
 
+import cv2
 import numpy as np
 from tqdm import tqdm
 from stable_baselines.common import set_global_seeds
 
+from config import ROI
 from vae.controller import VAEController
-from .data_loader import DataLoader
+from .data_loader import DataLoader, preprocess_image
 from .model import ConvVAE
 
 parser = argparse.ArgumentParser()
@@ -15,10 +17,13 @@ parser.add_argument('-i', '--image-folder', help='Path to a folder containing im
 parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs/recorded_data/')
 parser.add_argument('--z-size', help='Latent space', type=int, default=512)
 parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
+parser.add_argument('--n-samples', help='Max number of samples', type=int, default=-1)
 parser.add_argument('--batch-size', help='Batch size', type=int, default=64)
 parser.add_argument('--learning-rate', help='Learning rate', type=float, default=1e-4)
-parser.add_argument('--kl-tolerance', help='Learning rate', type=float, default=0.5)
+parser.add_argument('--kl-tolerance', help='KL tolerance', type=float, default=0.5)
+parser.add_argument('--beta', help='Weight for kl loss', type=float, default=1)
 parser.add_argument('--n-epochs', help='Number of epochs', type=int, default=10)
+parser.add_argument('--verbose', help='Verbosity', type=int, default=1)
 args = parser.parse_args()
 
 set_global_seeds(args.seed)
@@ -30,12 +35,16 @@ vae = ConvVAE(z_size=args.z_size,
               batch_size=args.batch_size,
               learning_rate=args.learning_rate,
               kl_tolerance=args.kl_tolerance,
+              beta=args.beta,
               is_training=True,
               reuse=False)
 
 images = [im for im in os.listdir(args.folder) if im.endswith('.jpg')]
 images = np.array(images)
 n_samples = len(images)
+
+if args.n_samples > 0:
+    n_samples = min(n_samples, args.n_samples)
 
 print("{} images".format(n_samples))
 
@@ -49,6 +58,9 @@ minibatchlist = [np.array(sorted(indices[start_idx:start_idx + args.batch_size])
                  for start_idx in range(0, len(indices) - args.batch_size + 1, args.batch_size)]
 
 data_loader = DataLoader(minibatchlist, images, n_workers=2, folder=args.folder)
+
+vae_controller = VAEController(z_size=args.z_size)
+vae_controller.vae = vae
 
 for epoch in range(args.n_epochs):
     pbar = tqdm(total=len(minibatchlist))
@@ -66,9 +78,27 @@ for epoch in range(args.n_epochs):
     print("Epoch {:3}/{}".format(epoch + 1,args.n_epochs))
     print("VAE: optimization step", (train_step + 1), train_loss, r_loss, kl_loss)
 
+    # Update params
+    vae_controller.vae = vae
+    vae_controller.set_target_params()
+    # Load test image
+    if args.verbose >= 1:
+        image_idx = np.random.randint(n_samples)
+        image_path = args.folder + images[image_idx]
+        image = cv2.imread(image_path)
+        r = ROI
+        im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+
+        encoded = vae_controller.encode(im)
+        reconstructed_image = vae_controller.decode(encoded)[0]
+        # Plot reconstruction
+        cv2.imshow("Original", image)
+        # print(reconstructed_image)
+        cv2.imshow("Reconstruction", reconstructed_image)
+        cv2.waitKey(1)
+
+
 save_path = "logs/vae-{}".format(args.z_size)
 print("Saving to {}".format(save_path))
-vae_controller = VAEController(z_size=args.z_size)
-vae_controller.vae = vae
 vae_controller.set_target_params()
-vae.save(save_path)
+vae_controller.save(save_path)

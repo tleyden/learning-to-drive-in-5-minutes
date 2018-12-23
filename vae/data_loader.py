@@ -8,10 +8,10 @@ import cv2
 import numpy as np
 from joblib import Parallel, delayed
 
-from config import IMAGE_WIDTH, IMAGE_HEIGHT
+from config import IMAGE_WIDTH, IMAGE_HEIGHT, ROI
 
 
-def preprocess_input(x, mode="image_net"):
+def preprocess_input(x, mode="rl"):
     """
     Normalize input
     :param x: (np.ndarray) (RGB image with values between [0, 255])
@@ -40,23 +40,20 @@ def preprocess_input(x, mode="image_net"):
         x[..., 0] /= 0.229
         x[..., 1] /= 0.224
         x[..., 2] /= 0.225
+    elif mode == "rl":
+        pass
     else:
         raise ValueError("Unknown mode for preprocessing")
     return x
 
 
-def de_normalize(x, mode="rl"):
+def denormalize(x, mode="rl"):
     """
     de normalize data (transform input to [0, 1])
     :param x: (np.ndarray)
     :param mode: (str) One of "image_net", "tf", "rl".
     :return: (np.ndarray)
     """
-    # Reorder channels when we have only one image
-    if x.shape[0] == 3 and len(x.shape) == 3:
-        # (n_channels, height, width) -> (width, height, n_channels)
-        x = np.transpose(x, (2, 1, 0))
-    assert x.shape[-1] == 3, "Color channel must be at the end of the tensor {}".format(x.shape)
 
     if mode == "tf":
         x /= 2.
@@ -70,25 +67,31 @@ def de_normalize(x, mode="rl"):
         x[..., 0] += 0.485
         x[..., 1] += 0.456
         x[..., 2] += 0.406
+    elif mode == "rl":
+        pass
     else:
-        raise ValueError("Unknown mode for deNormalize")
+        raise ValueError("Unknown mode for denormalize")
     # Clip to fix numeric imprecision (1e-09 = 0)
-    return np.clip(x, 0, 1)
+    return (255 * np.clip(x, 0, 1)).astype(np.uint8)
 
 
-def preprocess_image(image, convert_to_rgb=True):
+def preprocess_image(image, convert_to_rgb=False):
     """
     :param image: (np.ndarray) image (BGR or RGB)
     :param convert_to_rgb: (bool) whether the conversion to rgb is needed or not
     :return: (np.ndarray)
     """
+    # Crop
+    # Region of interest
+    r = ROI
+    image = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
     # Resize
     im = cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT), interpolation=cv2.INTER_AREA)
     # Convert BGR to RGB
     if convert_to_rgb:
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     # Normalize
-    im = preprocess_input(im.astype(np.float32), mode="tf")
+    im = preprocess_input(im.astype(np.float32), mode="rl")
 
     return im
 
@@ -185,7 +188,7 @@ class DataLoader(object):
         """
         image_path = folder + image_path
 
-        im = cv2.imread("{}".format(image_path))
+        im = cv2.imread(image_path)
         if im is None:
             raise ValueError("tried to load {}.jpg, but it was not found".format(image_path))
 

@@ -33,12 +33,13 @@ class ConvVAE(object):
     :param reuse: (bool)
     """
     def __init__(self, z_size=512, batch_size=100, learning_rate=0.0001,
-                 kl_tolerance=0.5, is_training=True, reuse=False):
+                 kl_tolerance=0.5, is_training=True, beta=1, reuse=False):
         self.z_size = z_size
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.is_training = is_training
         self.kl_tolerance = kl_tolerance
+        self.beta = beta
         self.reuse = reuse
         self.graph = None
         with tf.variable_scope('conv_vae', reuse=self.reuse):
@@ -59,14 +60,15 @@ class ConvVAE(object):
             h = tf.layers.conv2d(h, 64, 4, strides=2, activation=tf.nn.relu, name="enc_conv2")
             h = tf.layers.conv2d(h, 128, 4, strides=2, activation=tf.nn.relu, name="enc_conv3")
             h = tf.layers.conv2d(h, 256, 4, strides=2, activation=tf.nn.relu, name="enc_conv4")
-            # h = conv_to_fc(h)
-            h = tf.reshape(h, [-1, 3 * 8 * 256])
+            # h = tf.reshape(h, [-1, 3 * 8 * 256])
+            h = conv_to_fc(h)
 
             # VAE
             self.mu = tf.layers.dense(h, self.z_size, name="enc_fc_mu")
             self.logvar = tf.layers.dense(h, self.z_size, name="enc_fc_log_var")
             self.sigma = tf.exp(self.logvar / 2.0)
             self.epsilon = tf.random_normal([self.batch_size, self.z_size])
+            # self.epsilon = tf.random_normal([None, self.z_size])
             self.z = self.mu + self.sigma * self.epsilon
 
             # Decoder
@@ -98,7 +100,7 @@ class ConvVAE(object):
                 self.kl_loss = tf.maximum(self.kl_loss, self.kl_tolerance * self.z_size)
                 self.kl_loss = tf.reduce_mean(self.kl_loss)
 
-                self.loss = self.r_loss + self.kl_loss
+                self.loss = self.r_loss + self.beta * self.kl_loss
 
                 # training
                 self.lr = tf.Variable(self.learning_rate, trainable=False)
