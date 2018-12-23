@@ -3,25 +3,24 @@ import os
 
 import cv2
 import numpy as np
-from tqdm import tqdm
 from stable_baselines.common import set_global_seeds
+from tqdm import tqdm
 
 from config import ROI
 from vae.controller import VAEController
-from .data_loader import DataLoader, preprocess_image
+from .data_loader import DataLoader
 from .model import ConvVAE
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-i', '--image-folder', help='Path to a folder containing images for training',
-                    default='', type=str)
-parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs/recorded_data/')
+parser.add_argument('-f', '--folder', help='Path to a folder containing images for training', type=str,
+                    default='logs/recorded_data/')
 parser.add_argument('--z-size', help='Latent space', type=int, default=512)
 parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
 parser.add_argument('--n-samples', help='Max number of samples', type=int, default=-1)
 parser.add_argument('--batch-size', help='Batch size', type=int, default=64)
 parser.add_argument('--learning-rate', help='Learning rate', type=float, default=1e-4)
-parser.add_argument('--kl-tolerance', help='KL tolerance', type=float, default=0.5)
-parser.add_argument('--beta', help='Weight for kl loss', type=float, default=1)
+parser.add_argument('--kl-tolerance', help='KL tolerance (to cap KL loss)', type=float, default=0.5)
+parser.add_argument('--beta', help='Weight for kl loss', type=float, default=1.0)
 parser.add_argument('--n-epochs', help='Number of epochs', type=int, default=10)
 parser.add_argument('--verbose', help='Verbosity', type=int, default=1)
 args = parser.parse_args()
@@ -75,11 +74,10 @@ for epoch in range(args.n_epochs):
         ], feed)
         pbar.update(1)
     pbar.close()
-    print("Epoch {:3}/{}".format(epoch + 1,args.n_epochs))
+    print("Epoch {:3}/{}".format(epoch + 1, args.n_epochs))
     print("VAE: optimization step", (train_step + 1), train_loss, r_loss, kl_loss)
 
     # Update params
-    vae_controller.vae = vae
     vae_controller.set_target_params()
     # Load test image
     if args.verbose >= 1:
@@ -93,10 +91,8 @@ for epoch in range(args.n_epochs):
         reconstructed_image = vae_controller.decode(encoded)[0]
         # Plot reconstruction
         cv2.imshow("Original", image)
-        # print(reconstructed_image)
         cv2.imshow("Reconstruction", reconstructed_image)
         cv2.waitKey(1)
-
 
 save_path = "logs/vae-{}".format(args.z_size)
 print("Saving to {}".format(save_path))

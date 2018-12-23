@@ -23,7 +23,7 @@ MIN_STEERING = - MAX_STEERING
 # Simulation config
 MIN_THROTTLE = 0.4
 MAX_THROTTLE = 0.6
-Z_SIZE = 128
+Z_SIZE = 512
 N_COMMAND_HISTORY = 10
 FRAME_SKIP = 2
 # No frame skip during testing

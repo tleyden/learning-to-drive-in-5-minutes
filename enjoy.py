@@ -8,9 +8,9 @@ import time
 import gym
 import numpy as np
 from stable_baselines.common import set_global_seeds
-from stable_baselines.common.vec_env import VecNormalize, VecFrameStack
 
-from utils.utils import ALGOS, create_test_env, get_latest_run_id, get_saved_hyperparams, ENV_ID
+from config import ENV_ID
+from utils.utils import ALGOS, create_test_env, get_latest_run_id, get_saved_hyperparams
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs')

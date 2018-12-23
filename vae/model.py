@@ -11,6 +11,7 @@ import cloudpickle
 import numpy as np
 import tensorflow as tf
 
+
 def conv_to_fc(input_tensor):
     """
     Reshapes a Tensor from a convolutional network to a Tensor for a fully connected network
@@ -30,10 +31,12 @@ class ConvVAE(object):
     :param learning_rate: (float)
     :param kl_tolerance: (float)
     :param is_training: (bool)
+    :param beta: (float)
     :param reuse: (bool)
     """
+
     def __init__(self, z_size=512, batch_size=100, learning_rate=0.0001,
-                 kl_tolerance=0.5, is_training=True, beta=1, reuse=False):
+                 kl_tolerance=0.5, is_training=True, beta=1.0, reuse=False):
         self.z_size = z_size
         self.batch_size = batch_size
         self.learning_rate = learning_rate

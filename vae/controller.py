@@ -17,7 +17,6 @@ class VAEController:
     :param epoch_per_optimization: (int)
     :param batch_size: (int)
     :param buffer_size: (int)
-    :param reuse: (bool)
     """
     def __init__(self, z_size=512, image_size=(80, 160, 3),
                  learning_rate=0.0001, kl_tolerance=0.5,
