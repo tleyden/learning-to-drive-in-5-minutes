@@ -69,6 +69,7 @@ def load_vae(path=None, z_size=512):
             vae.load_json(path)
         else:
             vae.load(path)
+        # vae.reset_target_vae()
     return vae
 
 

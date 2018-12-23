@@ -1,3 +1,5 @@
+# MIT License
+# https://github.com/hardmaru/WorldModelsExperiments/tree/master/carracing
 # Original author: hardmaru
 # Edited by Roma Sokolkov and Antonin Raffin
 # VAE model
@@ -9,8 +11,27 @@ import cloudpickle
 import numpy as np
 import tensorflow as tf
 
+def conv_to_fc(input_tensor):
+    """
+    Reshapes a Tensor from a convolutional network to a Tensor for a fully connected network
+
+    :param input_tensor: (TensorFlow Tensor) The convolutional input tensor
+    :return: (TensorFlow Tensor) The fully connected output tensor
+    """
+    n_hidden = np.prod([v.value for v in input_tensor.get_shape()[1:]])
+    input_tensor = tf.reshape(input_tensor, [-1, n_hidden])
+    return input_tensor
+
 
 class ConvVAE(object):
+    """
+    :param z_size: (int)
+    :param batch_size: (int)
+    :param learning_rate: (float)
+    :param kl_tolerance: (float)
+    :param is_training: (bool)
+    :param reuse: (bool)
+    """
     def __init__(self, z_size=512, batch_size=100, learning_rate=0.0001,
                  kl_tolerance=0.5, is_training=True, reuse=False):
         self.z_size = z_size
@@ -38,6 +59,7 @@ class ConvVAE(object):
             h = tf.layers.conv2d(h, 64, 4, strides=2, activation=tf.nn.relu, name="enc_conv2")
             h = tf.layers.conv2d(h, 128, 4, strides=2, activation=tf.nn.relu, name="enc_conv3")
             h = tf.layers.conv2d(h, 256, 4, strides=2, activation=tf.nn.relu, name="enc_conv4")
+            # h = conv_to_fc(h)
             h = tf.reshape(h, [-1, 3 * 8 * 256])
 
             # VAE

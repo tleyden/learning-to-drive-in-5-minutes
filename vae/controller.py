@@ -8,6 +8,16 @@ from .model import ConvVAE
 
 
 class VAEController:
+    """
+    :param z_size: (int)
+    :param image_size: ((int, int, int))
+    :param learning_rate: (float)
+    :param kl_tolerance: (float)
+    :param epoch_per_optimization: (int)
+    :param batch_size: (int)
+    :param buffer_size: (int)
+    :param reuse: (bool)
+    """
     def __init__(self, z_size=512, image_size=(80, 160, 3),
                  learning_rate=0.0001, kl_tolerance=0.5,
                  epoch_per_optimization=10, batch_size=64,
@@ -124,3 +134,10 @@ class VAEController:
     def set_target_params(self):
         params = self.vae.get_params()
         self.target_vae.set_params(params)
+
+    def reset_target_vae(self):
+        self.target_vae = ConvVAE(z_size=self.z_size,
+                                  batch_size=1,
+                                  is_training=False,
+                                  reuse=False)
+        self.set_target_params()

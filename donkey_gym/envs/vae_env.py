@@ -141,7 +141,7 @@ class DonkeyVAEEnv(DonkeyEnv):
         if self.vae is None:
             return observation, reward, done, info
         # Store image in VAE buffer.
-        self.vae.buffer_append(observation)
+        # self.vae.buffer_append(observation)
         return self.vae.encode(observation), reward, done, info
 
     def set_vae(self, vae):

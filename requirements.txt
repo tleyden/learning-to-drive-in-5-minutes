@@ -10,3 +10,5 @@ pytablewriter
 opencv-python
 cloudpickle
 pygame
+joblib
+tqdm

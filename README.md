@@ -64,4 +64,5 @@ Just to make sure that environment was setup correctly try [pretrained models](h
 - [Tawn Kramer](https://github.com/tawnkramer) for Donkey simulator and Donkey Gym.
 - [Stable-Baselines](https://github.com/hill-a/stable-baselines) for DDPG/SAC and PPO implementations.
 - [RL Baselines Zoo](https://github.com/araffin/rl-baselines-zoo) for training/enjoy scripts.
+- [S-RL Toolbox](https://github.com/araffin/robotics-rl-srl) for the data loader
 - [World Models Experiments](https://github.com/hardmaru/WorldModelsExperiments) for VAE implementation.
