@@ -18,44 +18,29 @@ Missing parts:
 0. Download simulator
 1. Install dependencies
 2. (optional but recommended) Download pre-trained VAE
-3. Train controller
+3. Train controller for 5000 steps
 
 ```
-python train.py --algo sac -vae logs/vae.json
+python train.py --algo sac -vae logs/vae.pkl -n 5000
 ```
 
-# Under the hood
-
-Script does the following:
-- Initialize Donkey OpenAI gym environment.
-- Initialize VAE controller with random weights.
-- If no pretrained models found, run in train mode. Otherwise just load weights from files and run test.
-- Initialize DDPG controller.
-- Learning function will collect the data by running 10 episodes w/o DDPG optimization, then after every episode DDPG optimization happens. VAE optimized after every episode.
-- After 3000 steps training will be finished and weights params will be saved to files.
-
-# Troubleshooting
-
-## Disable VAE optimization
-
-Implementation is still very very raw and needs fine tuning, so to get quick results i recommend to run full session and then reuse `vae.json` (or use [pretrained](https://drive.google.com/open?id=16WYkH7goKnJM52ke1KAzs5vozGiuKPqu)) in new training session by adding `vae.load(PATH_MODEL_VAE)` before `ddpg.learn` and commenting out `vae.optimize()` in `ddpg_with_vae.py`. This will allow to train DDPG very quickly even on CPU machine.
-
-## Visualize what car sees
-
-Following code can be used to decode VAE's Z latent vector and save to image.
+4. Enjoy trained agent for 2000 steps
 
 ```
-arr = vae.decode(obs)
-arr = np.round(arr).astype(np.uint8)
-arr = arr.reshape(80, 160, 3)
-# pip install Pillow
-img = PIL.Image.fromarray(arr)
-img.save('decoded_img.jpg')
+python enjoy.py --algo sac -vae logs/vae.pkl --exp-id 0 -n 2000
 ```
 
-## Try pretrained models
+## Train vae
 
-Just to make sure that environment was setup correctly try [pretrained models](https://drive.google.com/open?id=16WYkH7goKnJM52ke1KAzs5vozGiuKPqu). Place `ddpg.pkl` and `vae.json` into the root directory. You should see similar to the GIF above.
+```
+python -m vae.train --n-epochs 50 --verbose 0 --z-size 128 -f logs/recorded_data/
+```
+
+## Test in teleoparation mode
+
+```
+python -m teleop.teleop_client --algo sac -vae logs/vae.pkl --exp-id 0
+```
 
 # Credits
 

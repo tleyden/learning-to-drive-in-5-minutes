@@ -191,6 +191,8 @@ def send_command(env, control_throttle, control_turn, obs, is_manual, model=None
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs')
+    parser.add_argument('--record-folder', help='Record folder, where images are saved', type=str,
+                        default='logs/recorded_data/')
     parser.add_argument('--algo', help='RL Algorithm', default='',
                         type=str, required=False, choices=list(ALGOS.keys()))
     parser.add_argument('-n', '--n-timesteps', help='number of timesteps', default=1000,
@@ -233,7 +235,7 @@ if __name__ == '__main__':
                        z_size=Z_SIZE, vae=vae, const_throttle=None,
                        min_throttle=MIN_THROTTLE, max_throttle=MAX_THROTTLE,
                        max_cte_error=10, n_command_history=N_COMMAND_HISTORY)
-    env = Recorder(env, verbose=1)
+    env = Recorder(env, folder=args.record_folder, verbose=1)
     try:
         pygame_main(env, model=model)
     except KeyboardInterrupt as e:
