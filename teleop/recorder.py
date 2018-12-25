@@ -19,6 +19,8 @@ class Recorder(object):
         self.folder = folder
         self.current_idx = 0
         self.verbose = verbose
+        self.observation_space = env.observation_space
+        self.action_space = env.action_space
         # Create folder if needed
         os.makedirs(folder, exist_ok=True)
 
