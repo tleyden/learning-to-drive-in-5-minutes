@@ -225,6 +225,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         # It should be setup in the 3 scenes available now.
         try:
             self.cte = data["cte"]
+            # print(self.cte)
         except KeyError:
             print("No CTE")
             pass

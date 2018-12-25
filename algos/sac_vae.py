@@ -10,7 +10,6 @@ from stable_baselines import logger
 
 
 class SACWithVAE(SAC):
-    """docstring for SACWithVAE."""
     def optimize(self, step, writer, current_lr):
         mb_infos_vals = []
         for grad_step in range(self.gradient_steps):
@@ -35,7 +34,16 @@ class SACWithVAE(SAC):
 
         start_time = time.time()
         episode_rewards = [0.0]
-        obs = self.env.reset()
+        is_teleop_env = hasattr(self.env, "wait_for_teleop_reset")
+        # TeleopEnv
+        if is_teleop_env:
+            print("Waiting for teleop")
+            obs = self.env.wait_for_teleop_reset()
+            print(obs.shape)
+        else:
+            obs = self.env.reset()
+
+
         self.episode_reward = np.zeros((1,))
         ep_info_buf = deque(maxlen=100)
         ep_len = 0
@@ -97,13 +105,18 @@ class SACWithVAE(SAC):
 
             episode_rewards[-1] += reward
             if done:
-                if not isinstance(self.env, VecEnv):
+                if not (isinstance(self.env, VecEnv) or is_teleop_env):
                     obs = self.env.reset()
 
                 print("Episode finished. Reward: {:.2f} {} Steps".format(episode_rewards[-1], ep_len))
                 episode_rewards.append(0.0)
                 ep_len = 0
                 mb_infos_vals = self.optimize(step, writer, current_lr)
+
+                # Refresh obs when using TeleopEnv
+                if is_teleop_env:
+                    print("Waiting for teleop")
+                    obs = self.env.wait_for_teleop_reset()
 
 
             # Log losses and entropy, useful for monitor training
@@ -133,6 +146,8 @@ class SACWithVAE(SAC):
                 logger.dumpkvs()
                 # Reset infos:
                 infos_values = []
+        if is_teleop_env:
+            self.env.is_training = False
         # Use last batch
         print("Final optimization before saving")
         self.env.reset()

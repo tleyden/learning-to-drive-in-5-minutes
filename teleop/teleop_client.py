@@ -6,6 +6,7 @@ import argparse
 from threading import Event, Thread
 
 import pygame
+import numpy as np
 from pygame.locals import *
 
 from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE, \
@@ -81,13 +82,14 @@ class TeleopEnv(object):
         super(TeleopEnv, self).__init__()
         self.env = env
         self.model = model
-        self.need_reset = True
+        self.need_reset = False
         self.is_manual = True
         self.is_recording = is_recording
         self.is_training = is_training
         self.current_obs = None
-        self.ready_event = Event()
         self.exit_event = Event()
+        self.done_event = Event()
+        self.ready_event = Event()
         # For testing
         self.deterministic = deterministic
         self.window = None
@@ -95,6 +97,7 @@ class TeleopEnv(object):
         self.action = None
         self.observation_space = env.observation_space
         self.action_space = env.action_space
+        self.donkey_env = None
         self.start_process()
 
     def start_process(self):
@@ -106,10 +109,14 @@ class TeleopEnv(object):
         self.process.start()
 
     def step(self, action):
-        # FIXME: not the right, the obs needs to be updated
-        self.ready_event.wait()
         self.action = action
         self.current_obs, reward, done, info = self.env.step(action)
+        # Overwrite done
+        if self.done_event.is_set():
+            done = True
+            reward = -1
+        else:
+            done = False
         return self.current_obs, reward, done, info
 
     def render(self, mode='human'):
@@ -122,6 +129,13 @@ class TeleopEnv(object):
             return self.env.reset()
         else:
             return self.current_obs
+
+    def wait_for_teleop_reset(self):
+        self.ready_event.wait()
+        if self.donkey_env.n_command_history > 0:
+            self.current_obs = np.concatenate((self.current_obs,
+                                               np.zeros_like(self.donkey_env.command_history)), axis=-1)
+        return self.reset()
 
     def exit(self):
         self.env.reset()
@@ -142,6 +156,12 @@ class TeleopEnv(object):
         control_throttle, control_turn = 0, 0
         action = [control_turn, control_throttle]
         self.update_screen(action)
+
+        donkey_env = self.env
+        if isinstance(donkey_env, Recorder):
+            donkey_env = donkey_env.env
+
+        self.donkey_env = donkey_env
 
         last_time_pressed = {'space': 0, 'm': 0, 't': 0}
         self.current_obs = self.reset()
@@ -168,8 +188,12 @@ class TeleopEnv(object):
                 last_time_pressed['m'] = time.time()
                 if self.is_training:
                     if self.is_manual:
+                        # Stop training
                         self.ready_event.clear()
+                        self.done_event.set()
                     else:
+                        # Start training
+                        self.done_event.clear()
                         self.ready_event.set()
 
             if keys[K_t] and (time.time() - last_time_pressed['t']) > KEY_MIN_DELAY:
@@ -193,10 +217,18 @@ class TeleopEnv(object):
                 angle_order = MIN_STEERING * t + MAX_STEERING * (1 - t)
                 self.action = [angle_order, control_throttle]
             elif self.model is not None and not self.is_training:
+                # FIXME: add command history
+                if not self.observation_space.contains(self.current_obs):
+                    self.current_obs = np.concatenate((self.current_obs,
+                                                       np.zeros_like(self.donkey_env.command_history)), axis=-1)
                 self.action, _ = self.model.predict(self.current_obs, deterministic=self.deterministic)
 
             if not (self.is_training and not self.is_manual):
-                self.current_obs, _, _, _ = self.env.step(self.action)
+                if self.is_manual:
+                    donkey_env.viewer.take_action(self.action)
+                    self.current_obs, _, _, _ = donkey_env._observe()
+                else:
+                    self.current_obs, _, _, _ = self.env.step(self.action)
 
             self.update_screen(self.action)
 
@@ -225,14 +257,14 @@ class TeleopEnv(object):
         self.write_text(help_str, 20, 50, SMALL_FONT)
         help_2 = 'space key: toggle recording -- m: change mode -- r: reset -- l: reset track'
         self.write_text(help_2, 20, 100, SMALL_FONT)
-        self.write_text('Status:', 20, 150, SMALL_FONT, WHITE)
+        self.write_text('Recording Status:', 20, 150, SMALL_FONT, WHITE)
 
         if self.is_recording:
             text, text_color = 'RECORDING', RED
         else:
             text, text_color = 'NOT RECORDING', GREEN
 
-        self.write_text(text, 100, 150, SMALL_FONT, text_color)
+        self.write_text(text, 200, 150, SMALL_FONT, text_color)
 
         self.write_text('Mode:', 20, 200, SMALL_FONT, WHITE)
 
@@ -241,7 +273,7 @@ class TeleopEnv(object):
         else:
             text, text_color = 'AUTONOMOUS', ORANGE
 
-        self.write_text(text, 100, 200, SMALL_FONT, text_color)
+        self.write_text(text, 200, 200, SMALL_FONT, text_color)
 
         self.write_text('Training Status:', 20, 250, SMALL_FONT, WHITE)
 
@@ -289,9 +321,9 @@ if __name__ == '__main__':
         assert os.path.isfile(model_path), "No model found for {} on {}, path: {}".format(algo, ENV_ID, model_path)
         model = ALGOS[algo].load(model_path)
 
-        if args.vae_path != '':
-            print("Loading VAE ...")
-            vae = load_vae(args.vae_path, z_size=Z_SIZE)
+    if args.vae_path != '':
+        print("Loading VAE ...")
+        vae = load_vae(args.vae_path, z_size=Z_SIZE)
 
     if vae is None:
         N_COMMAND_HISTORY = 0
@@ -303,13 +335,12 @@ if __name__ == '__main__':
     env = Recorder(env, folder=args.record_folder, verbose=1)
     try:
         env = TeleopEnv(env, model=model, is_training=True)
-        # Wait for main_loop to exit
-        # env.wait()
-        while not env.exit_event.is_set():
-            action = env.action_space.sample()
-            _, _, done, _ = env.step(action)
-            if done:
-                env.reset()
+        model = ALGOS['sac']('MlpPolicy', env, verbose=1,
+                             buffer_size=10000, gradient_steps=300,
+                             ent_coef=0.2, batch_size=64, train_freq=2500)
+        env.model = model
+        model.learn(5000, log_interval=1)
+        model.save("logs/sac/{}".format(ENV_ID))
         env.wait()
     except KeyboardInterrupt as e:
         pass
