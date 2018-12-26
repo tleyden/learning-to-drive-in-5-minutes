@@ -15,6 +15,7 @@ from stable_baselines.ppo2.ppo2 import constfn
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
     MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY, Z_SIZE, BASE_ENV, ENV_ID
 from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, load_vae
+from teleop.teleop_client import TeleopEnv
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-tb', '--tensorboard-log', help='Tensorboard log dir', default='', type=str)
@@ -33,6 +34,8 @@ parser.add_argument('--save-vae', action='store_true', default=False,
 parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
 parser.add_argument('--random-features', action='store_true', default=False,
                     help='Use random features')
+parser.add_argument('--teleop', action='store_true', default=False,
+                    help='Use teleoperation for training')
 args = parser.parse_args()
 
 set_global_seeds(args.seed)
@@ -104,7 +107,11 @@ if 'normalize' in hyperparams.keys():
         normalize = True
     del hyperparams['normalize']
 
-env = DummyVecEnv([make_env(args.seed, vae=vae)])
+if not args.teleop:
+    env = DummyVecEnv([make_env(args.seed, vae=vae, teleop=args.teleop)])
+else:
+    env = make_env(args.seed, vae=vae, teleop=args.teleop)()
+
 if normalize:
     if hyperparams.get('normalize', False) and args.algo in ['ddpg']:
         print("WARNING: normalization not supported yet for DDPG")
@@ -157,18 +164,28 @@ else:
     # Train an agent from scratch
     model = ALGOS[args.algo](env=env, tensorboard_log=tensorboard_log, verbose=1, **hyperparams)
 
+if args.teleop:
+    env = TeleopEnv(env, is_training=True)
+    model.set_env(env)
+    env.model = model
+
 kwargs = {}
 if args.log_interval > -1:
     kwargs = {'log_interval': args.log_interval}
 
 model.learn(n_timesteps, **kwargs)
 
-# Close the connection properly
-env.reset()
-if isinstance(env, VecFrameStack):
-    env = env.venv
-# HACK to bypass Monitor wrapper
-env.envs[0].env.exit_scene()
+if args.teleop:
+    env.wait()
+    env.exit()
+    time.sleep(0.5)
+else:
+    # Close the connection properly
+    env.reset()
+    if isinstance(env, VecFrameStack):
+        env = env.venv
+    # HACK to bypass Monitor wrapper
+    env.envs[0].env.exit_scene()
 
 # Save trained model
 log_path = "{}/{}/".format(args.log_folder, args.algo)

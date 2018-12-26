@@ -14,14 +14,11 @@ class VAEController:
     :param image_size: ((int, int, int))
     :param learning_rate: (float)
     :param kl_tolerance: (float)
-    :param epoch_per_optimization: (int)
     :param batch_size: (int)
-    :param buffer_size: (int)
     """
-    def __init__(self, z_size=512, image_size=(80, 160, 3),
+    def __init__(self, z_size=None, image_size=(80, 160, 3),
                  learning_rate=0.0001, kl_tolerance=0.5,
-                 epoch_per_optimization=10, batch_size=64,
-                 buffer_size=500):
+                 batch_size=64):
         # VAE input and output shapes
         self.z_size = z_size
         self.image_size = image_size
@@ -31,20 +28,23 @@ class VAEController:
         self.kl_tolerance = kl_tolerance
 
         # Training params
-        self.epoch_per_optimization = epoch_per_optimization
         self.batch_size = batch_size
 
-        self.vae = ConvVAE(z_size=self.z_size,
-                           batch_size=self.batch_size,
-                           learning_rate=self.learning_rate,
-                           kl_tolerance=self.kl_tolerance,
-                           is_training=True,
-                           reuse=False)
+        self.vae = None
+        self.target_vae = None
 
-        self.target_vae = ConvVAE(z_size=self.z_size,
-                                  batch_size=1,
-                                  is_training=False,
-                                  reuse=False)
+        if z_size is not None:
+            self.vae = ConvVAE(z_size=self.z_size,
+                               batch_size=self.batch_size,
+                               learning_rate=self.learning_rate,
+                               kl_tolerance=self.kl_tolerance,
+                               is_training=True,
+                               reuse=False)
+
+            self.target_vae = ConvVAE(z_size=self.z_size,
+                                      batch_size=1,
+                                      is_training=False,
+                                      reuse=False)
 
     def encode(self, arr):
         assert arr.shape == self.image_size

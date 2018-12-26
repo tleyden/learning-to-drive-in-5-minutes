@@ -8,11 +8,13 @@ from threading import Event, Thread
 import pygame
 import numpy as np
 from pygame.locals import *
+from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
+from stable_baselines.bench import Monitor
 
 from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE, \
     LEVEL, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
-from utils.utils import ALGOS, get_latest_run_id, load_vae
+from utils.utils import ALGOS, get_latest_run_id, load_vae, linear_schedule
 from .recorder import Recorder
 
 UP = (1, 0)
@@ -45,7 +47,7 @@ moveBindingsGame = {
 pygame.font.init()
 FONT = pygame.font.SysFont('Open Sans', 25)
 SMALL_FONT = pygame.font.SysFont('Open Sans', 20)
-KEY_MIN_DELAY = 0.2
+KEY_MIN_DELAY = 0.4
 
 
 def control(x, theta, control_throttle, control_turn):
@@ -133,13 +135,14 @@ class TeleopEnv(object):
     def wait_for_teleop_reset(self):
         self.ready_event.wait()
         if self.donkey_env.n_command_history > 0:
-            self.current_obs = np.concatenate((self.current_obs,
-                                               np.zeros_like(self.donkey_env.command_history)), axis=-1)
+            if not self.observation_space.contains(self.current_obs):
+                self.current_obs = np.concatenate((self.current_obs,
+                                                   np.zeros_like(self.donkey_env.command_history)), axis=-1)
         return self.reset()
 
     def exit(self):
         self.env.reset()
-        self.env.exit_scene()
+        self.donkey_env.exit_scene()
 
     def wait(self):
         self.process.join()
@@ -158,9 +161,18 @@ class TeleopEnv(object):
         self.update_screen(action)
 
         donkey_env = self.env
+        # Unwrap env
         if isinstance(donkey_env, Recorder):
             donkey_env = donkey_env.env
+        while isinstance(donkey_env, VecNormalize) or isinstance(donkey_env, VecFrameStack):
+            donkey_env = donkey_env.venv
 
+        if isinstance(donkey_env, DummyVecEnv):
+            donkey_env = donkey_env.envs[0]
+        if isinstance(donkey_env, Monitor):
+            donkey_env = donkey_env.env
+
+        assert isinstance(donkey_env, DonkeyVAEEnv), print(donkey_env)
         self.donkey_env = donkey_env
 
         last_time_pressed = {'space': 0, 'm': 0, 't': 0}
@@ -206,7 +218,7 @@ class TeleopEnv(object):
 
             if keys[K_l]:
                 self.env.reset()
-                self.env.exit_scene()
+                self.donkey_env.exit_scene()
                 self.need_reset = True
 
             # Smooth control for teleoperation
@@ -217,7 +229,6 @@ class TeleopEnv(object):
                 angle_order = MIN_STEERING * t + MAX_STEERING * (1 - t)
                 self.action = [angle_order, control_throttle]
             elif self.model is not None and not self.is_training:
-                # FIXME: add command history
                 if not self.observation_space.contains(self.current_obs):
                     self.current_obs = np.concatenate((self.current_obs,
                                                        np.zeros_like(self.donkey_env.command_history)), axis=-1)
@@ -332,13 +343,15 @@ if __name__ == '__main__':
                        max_throttle=MAX_THROTTLE, max_cte_error=10, n_command_history=N_COMMAND_HISTORY)
     env = Recorder(env, folder=args.record_folder, verbose=1)
     try:
-        env = TeleopEnv(env, model=model, is_training=True)
-        model = ALGOS['sac']('MlpPolicy', env, verbose=1,
-                             buffer_size=10000, gradient_steps=300,
-                             ent_coef=0.2, batch_size=64, train_freq=2500)
-        env.model = model
-        model.learn(5000, log_interval=1)
-        model.save("logs/sac/{}".format(ENV_ID))
+        env = TeleopEnv(env, model=model)
+        # model = ALGOS['sac']('CustomSACPolicy', env, verbose=1,
+        #                      buffer_size=10000, gradient_steps=300,
+        #                      ent_coef=0.2, batch_size=64, train_freq=2500,
+        #                      learning_rate=linear_schedule(3e-3))
+        # env.model = model
+        # model.learn(10000, log_interval=1)
+        # model.save("logs/sac/{}".format(ENV_ID))
+        # env.model = model
         env.wait()
     except KeyboardInterrupt as e:
         pass

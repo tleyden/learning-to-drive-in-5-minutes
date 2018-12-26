@@ -37,7 +37,6 @@ class SACWithVAE(SAC):
         if is_teleop_env:
             print("Waiting for teleop")
             obs = self.env.wait_for_teleop_reset()
-            print(obs.shape)
         else:
             obs = self.env.reset()
 

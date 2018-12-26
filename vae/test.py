@@ -11,7 +11,6 @@ from vae.controller import VAEController
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs/recorded_data/')
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
-parser.add_argument('--z-size', help='Latent space', type=int, default=512)
 parser.add_argument('--n-samples', help='Max number of samples', type=int, default=20)
 parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
 args = parser.parse_args()
@@ -21,7 +20,7 @@ set_global_seeds(args.seed)
 if not args.folder.endswith('/'):
     args.folder += '/'
 
-vae = VAEController(z_size=args.z_size)
+vae = VAEController()
 vae.load(args.vae_path)
 
 images = [im for im in os.listdir(args.folder) if im.endswith('.jpg')]

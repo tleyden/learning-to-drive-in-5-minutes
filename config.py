@@ -30,7 +30,7 @@ FRAME_SKIP = 2
 # it allows smoother control
 TEST_FRAME_SKIP = 1
 MAX_CTE_ERROR = 3.0
-LEVEL = 1
+LEVEL = 0
 BASE_ENV = "DonkeyVae-v0"
 ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
 SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',

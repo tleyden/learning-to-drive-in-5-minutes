@@ -66,7 +66,7 @@ def load_vae(path=None, z_size=None):
     # z_size will be recovered from saved model
     if z_size is None:
         assert path is not None
-        z_size = 1  # Tmp z_size
+
     vae = VAEController(z_size=z_size)
     if path is not None:
         if path.endswith('.json'):
@@ -77,7 +77,7 @@ def load_vae(path=None, z_size=None):
     return vae
 
 
-def make_env(seed=0, log_dir=None, vae=None, frame_skip=None):
+def make_env(seed=0, log_dir=None, vae=None, frame_skip=None, teleop=False):
     """
     Helper function to multiprocess training
     and log the progress.
@@ -86,6 +86,7 @@ def make_env(seed=0, log_dir=None, vae=None, frame_skip=None):
     :param log_dir: (str)
     :param vae: (str)
     :param frame_skip: (int)
+    :param teleop: (bool)
     """
     if frame_skip is None:
         frame_skip = FRAME_SKIP
@@ -99,7 +100,8 @@ def make_env(seed=0, log_dir=None, vae=None, frame_skip=None):
         env = DonkeyVAEEnv(level=LEVEL, frame_skip=frame_skip, vae=vae, const_throttle=None, min_throttle=MIN_THROTTLE,
                            max_throttle=MAX_THROTTLE, max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY)
         env.seed(seed)
-        env = Monitor(env, log_dir, allow_early_resets=True)
+        if not teleop:
+            env = Monitor(env, log_dir, allow_early_resets=True)
         return env
 
     return _init
