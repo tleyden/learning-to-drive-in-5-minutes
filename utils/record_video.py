@@ -8,7 +8,8 @@ import gym
 import numpy as np
 from stable_baselines.common.vec_env import VecVideoRecorder, VecFrameStack, VecNormalize
 
-from .utils import ALGOS, create_test_env, get_saved_hyperparams, ENV_ID, get_latest_run_id
+from config import ENV_ID
+from .utils import ALGOS, create_test_env, get_saved_hyperparams, get_latest_run_id
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--folder', help='Log folder', type=str, default='logs')

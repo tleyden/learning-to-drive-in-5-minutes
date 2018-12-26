@@ -10,7 +10,7 @@ import numpy as np
 from pygame.locals import *
 
 from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE, \
-    LEVEL, Z_SIZE, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID
+    LEVEL, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from utils.utils import ALGOS, get_latest_run_id, load_vae
 from .recorder import Recorder
@@ -323,15 +323,13 @@ if __name__ == '__main__':
 
     if args.vae_path != '':
         print("Loading VAE ...")
-        vae = load_vae(args.vae_path, z_size=Z_SIZE)
+        vae = load_vae(args.vae_path)
 
     if vae is None:
         N_COMMAND_HISTORY = 0
 
-    env = DonkeyVAEEnv(level=LEVEL, frame_skip=TEST_FRAME_SKIP,
-                       z_size=Z_SIZE, vae=vae, const_throttle=None,
-                       min_throttle=MIN_THROTTLE, max_throttle=MAX_THROTTLE,
-                       max_cte_error=10, n_command_history=N_COMMAND_HISTORY)
+    env = DonkeyVAEEnv(level=LEVEL, frame_skip=TEST_FRAME_SKIP, vae=vae, const_throttle=None, min_throttle=MIN_THROTTLE,
+                       max_throttle=MAX_THROTTLE, max_cte_error=10, n_command_history=N_COMMAND_HISTORY)
     env = Recorder(env, folder=args.record_folder, verbose=1)
     try:
         env = TeleopEnv(env, model=model, is_training=True)

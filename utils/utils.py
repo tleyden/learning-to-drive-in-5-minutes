@@ -20,7 +20,7 @@ from stable_baselines.ddpg.policies import FeedForwardPolicy as DDPGPolicy
 from algos import DDPG, SAC
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from vae.controller import VAEController
-from config import MIN_THROTTLE, MAX_THROTTLE, MAX_CTE_ERROR, Z_SIZE, LEVEL, FRAME_SKIP,\
+from config import MIN_THROTTLE, MAX_THROTTLE, MAX_CTE_ERROR, LEVEL, FRAME_SKIP, \
     N_COMMAND_HISTORY, TEST_FRAME_SKIP
 
 ALGOS = {
@@ -52,24 +52,28 @@ class CustomSACPolicy(SACPolicy):
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
         super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
-                                           layers=[32, 8],
-                                           feature_extraction="mlp",
-                                           layer_norm=True)
+                                               layers=[32, 8],
+                                               feature_extraction="mlp",
+                                               layer_norm=True)
+
 
 register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
 register_policy('CustomSACPolicy', CustomSACPolicy)
 register_policy('CustomMlpPolicy', CustomMlpPolicy)
 
 
-def load_vae(path=None, z_size=512):
+def load_vae(path=None, z_size=None):
+    # z_size will be recovered from saved model
+    if z_size is None:
+        assert path is not None
+        z_size = 1  # Tmp z_size
     vae = VAEController(z_size=z_size)
-    print("Dim VAE = {}".format(z_size))
     if path is not None:
         if path.endswith('.json'):
             vae.load_json(path)
         else:
             vae.load(path)
-        # vae.reset_target_vae()
+    print("Dim VAE = {}".format(vae.z_size))
     return vae
 
 
@@ -81,6 +85,7 @@ def make_env(seed=0, log_dir=None, vae=None, frame_skip=None):
     :param seed: (int)
     :param log_dir: (str)
     :param vae: (str)
+    :param frame_skip: (int)
     """
     if frame_skip is None:
         frame_skip = FRAME_SKIP
@@ -91,10 +96,8 @@ def make_env(seed=0, log_dir=None, vae=None, frame_skip=None):
 
     def _init():
         set_global_seeds(seed)
-        env = DonkeyVAEEnv(level=LEVEL, frame_skip=frame_skip,
-                           z_size=Z_SIZE, vae=vae, const_throttle=None,
-                           min_throttle=MIN_THROTTLE, max_throttle=MAX_THROTTLE,
-                           max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY)
+        env = DonkeyVAEEnv(level=LEVEL, frame_skip=frame_skip, vae=vae, const_throttle=None, min_throttle=MIN_THROTTLE,
+                           max_throttle=MAX_THROTTLE, max_cte_error=MAX_CTE_ERROR, n_command_history=N_COMMAND_HISTORY)
         env.seed(seed)
         env = Monitor(env, log_dir, allow_early_resets=True)
         return env
@@ -121,12 +124,13 @@ def create_test_env(stats_path=None, seed=0,
         logger.configure()
 
     vae_path = hyperparams['vae_path']
+    vae_path_json = ''
     if vae_path == '':
         vae_path_json = os.path.join(stats_path, 'vae.json')
         vae_path = os.path.join(stats_path, 'vae.pkl')
     vae = None
     if stats_path is not None and (os.path.isfile(vae_path) or os.path.isfile(vae_path_json)):
-        vae = load_vae(vae_path, z_size=Z_SIZE)
+        vae = load_vae(vae_path)
 
     env = DummyVecEnv([make_env(seed, log_dir, vae=vae,
                                 frame_skip=TEST_FRAME_SKIP)])

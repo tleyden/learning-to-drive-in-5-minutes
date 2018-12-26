@@ -23,15 +23,15 @@ MIN_STEERING = - MAX_STEERING
 # Simulation config
 MIN_THROTTLE = 0.4
 MAX_THROTTLE = 0.6
-Z_SIZE = 512
+Z_SIZE = 512 # Only used for random features
 N_COMMAND_HISTORY = 10
 FRAME_SKIP = 2
 # No frame skip during testing
 # it allows smoother control
 TEST_FRAME_SKIP = 1
 MAX_CTE_ERROR = 3.0
-LEVEL = 0
+LEVEL = 1
 BASE_ENV = "DonkeyVae-v0"
 ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
 SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
-              'MAX_CTE_ERROR', 'N_COMMAND_HISTORY', 'Z_SIZE']
+              'MAX_CTE_ERROR', 'N_COMMAND_HISTORY']

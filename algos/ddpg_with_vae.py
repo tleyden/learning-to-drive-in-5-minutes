@@ -21,10 +21,9 @@ class DDPGWithVAE(DDPG):
 
     - Stop rollout on episode done.
     - More verbosity.
-    - Add VAE optimization step.
     """
-    def learn(self, total_timesteps, callback=None, vae=None,
-              skip_episodes=0, optimize_vae=False, min_throttle=0):
+    def learn(self, total_timesteps, callback=None, seed=None,
+              log_interval=1, print_freq=100):
         rank = MPI.COMM_WORLD.Get_rank()
         # we assume symmetric actions.
         assert np.all(np.abs(self.env.action_space.low) == self.env.action_space.high)
@@ -97,45 +96,41 @@ class DDPGWithVAE(DDPG):
                         
                 # Train VAE.
                 train_start = time.time()
-                if optimize_vae and vae is not None:
-                    vae.optimize()
-                    print("VAE training duration:", time.time() - train_start)
 
                 # Train DDPG.
                 actor_losses = []
                 critic_losses = []
                 train_start = time.time()
-                if episodes > skip_episodes:
-                    for t_train in range(self.nb_train_steps):
-                        critic_loss, actor_loss = self._train_step(0, None, log=t_train == 0)
-                        critic_losses.append(critic_loss)
-                        actor_losses.append(actor_loss)
-                        self._update_target_net()
-                    print("DDPG training duration: {:.2f}".format(time.time() - train_start))
+                for t_train in range(self.nb_train_steps):
+                    critic_loss, actor_loss = self._train_step(0, None, log=t_train == 0)
+                    critic_losses.append(critic_loss)
+                    actor_losses.append(actor_loss)
+                    self._update_target_net()
+                print("DDPG training duration: {:.2f}".format(time.time() - train_start))
 
-                    mpi_size = MPI.COMM_WORLD.Get_size()
-                    # Log stats.
-                    # XXX shouldn't call np.mean on variable length lists
-                    duration = time.time() - start_time
-                    stats = self._get_stats()
-                    combined_stats = stats.copy()
-                    combined_stats['train/loss_actor'] = np.mean(actor_losses)
-                    combined_stats['train/loss_critic'] = np.mean(critic_losses)
-                    combined_stats['total/duration'] = duration
-                    combined_stats['total/steps_per_second'] = float(step) / float(duration)
-                    combined_stats['total/episodes'] = episodes
+                mpi_size = MPI.COMM_WORLD.Get_size()
+                # Log stats.
+                # XXX shouldn't call np.mean on variable length lists
+                duration = time.time() - start_time
+                stats = self._get_stats()
+                combined_stats = stats.copy()
+                combined_stats['train/loss_actor'] = np.mean(actor_losses)
+                combined_stats['train/loss_critic'] = np.mean(critic_losses)
+                combined_stats['total/duration'] = duration
+                combined_stats['total/steps_per_second'] = float(step) / float(duration)
+                combined_stats['total/episodes'] = episodes
 
-                    combined_stats_sums = MPI.COMM_WORLD.allreduce(
-                        np.array([as_scalar(x) for x in combined_stats.values()]))
-                    combined_stats = {k: v / mpi_size for (k, v) in zip(combined_stats.keys(), combined_stats_sums)}
+                combined_stats_sums = MPI.COMM_WORLD.allreduce(
+                    np.array([as_scalar(x) for x in combined_stats.values()]))
+                combined_stats = {k: v / mpi_size for (k, v) in zip(combined_stats.keys(), combined_stats_sums)}
 
-                    # Total statistics.
-                    combined_stats['total/steps'] = step
+                # Total statistics.
+                combined_stats['total/steps'] = step
 
-                    for key in sorted(combined_stats.keys()):
-                        logger.record_tabular(key, combined_stats[key])
-                    logger.dump_tabular()
-                    logger.info('')
+                for key in sorted(combined_stats.keys()):
+                    logger.record_tabular(key, combined_stats[key])
+                logger.dump_tabular()
+                logger.info('')
 
 
 def as_scalar(scalar):

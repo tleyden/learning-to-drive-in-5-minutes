@@ -48,7 +48,7 @@ print("=" * 10, ENV_ID, args.algo, "=" * 10)
 vae = None
 if args.vae_path != '':
     print("Loading VAE ...")
-    vae = load_vae(args.vae_path, z_size=Z_SIZE)
+    vae = load_vae(args.vae_path)
 elif args.random_features:
     print("Randomly initialized VAE")
     vae = load_vae(z_size=Z_SIZE)
@@ -66,6 +66,9 @@ with open('hyperparams/{}.yml'.format(args.algo), 'r') as f:
 saved_hyperparams = OrderedDict([(key, hyperparams[key]) for key in sorted(hyperparams.keys())])
 # save vae path
 saved_hyperparams['vae_path'] = args.vae_path
+if vae is not None:
+    saved_hyperparams['z_size'] = vae.z_size
+
 # Save simulation params
 for key in SIM_PARAMS:
     saved_hyperparams[key] = eval(key)

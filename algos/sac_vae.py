@@ -2,11 +2,10 @@ import time
 from collections import deque
 
 import numpy as np
-import tensorflow as tf
-from stable_baselines import SAC, logger
+from stable_baselines import SAC
+from stable_baselines import logger
 from stable_baselines.common.vec_env import VecEnv
 from stable_baselines.ppo2.ppo2 import safe_mean, get_schedule_fn
-from stable_baselines import logger
 
 
 class SACWithVAE(SAC):
@@ -24,8 +23,7 @@ class SACWithVAE(SAC):
                 self.sess.run(self.target_update_op)
         return mb_infos_vals
 
-    def learn(self, total_timesteps, callback=None, seed=None, vae=None,
-              skip_episodes=0, optimize_vae=False, min_throttle=0, writer=None,
+    def learn(self, total_timesteps, callback=None, seed=None,
               log_interval=1, print_freq=100):
         self._setup_learn(seed)
 
@@ -43,13 +41,13 @@ class SACWithVAE(SAC):
         else:
             obs = self.env.reset()
 
-
         self.episode_reward = np.zeros((1,))
         ep_info_buf = deque(maxlen=100)
         ep_len = 0
         self.n_updates = 0
         infos_values = []
         mb_infos_vals = []
+        writer = None
 
         for step in range(total_timesteps):
             # Compute current learning_rate
@@ -91,12 +89,6 @@ class SACWithVAE(SAC):
             if maybe_ep_info is not None:
                 ep_info_buf.extend([maybe_ep_info])
 
-            if writer is not None:
-                ep_reward = np.array([reward]).reshape((1, -1))
-                ep_done = np.array([done]).reshape((1, -1))
-                self.episode_reward = total_episode_reward_logger(self.episode_reward, ep_reward,
-                                                                  ep_done, writer, step)
-
             if ep_len > self.train_freq:
                 print("Additional training")
                 mb_infos_vals = self.optimize(step, writer, current_lr)
@@ -117,7 +109,6 @@ class SACWithVAE(SAC):
                 if is_teleop_env:
                     print("Waiting for teleop")
                     obs = self.env.wait_for_teleop_reset()
-
 
             # Log losses and entropy, useful for monitor training
             if len(mb_infos_vals) > 0:

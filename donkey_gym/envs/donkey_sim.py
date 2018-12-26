@@ -211,8 +211,9 @@ class DonkeyUnitySimHandler(IMesgHandler):
         # self.image_array = cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT))
 
         # name of object we just hit. "none" if nothing.
-        if self.hit == "none":
-            self.hit = data["hit"]
+        # NOTE: obstacle detection disabled
+        # if self.hit == "none":
+        #     self.hit = data["hit"]
 
         self.x = data["pos_x"]
         self.y = data["pos_y"]

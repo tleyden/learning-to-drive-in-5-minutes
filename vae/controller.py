@@ -34,13 +34,6 @@ class VAEController:
         self.epoch_per_optimization = epoch_per_optimization
         self.batch_size = batch_size
 
-        # Buffer
-        self.buffer = None
-        self.buffer_size = buffer_size
-        self.buffer_pos = -1
-        self.buffer_full = False
-        self.buffer_reset()
-
         self.vae = ConvVAE(z_size=self.z_size,
                            batch_size=self.batch_size,
                            learning_rate=self.learning_rate,
@@ -52,28 +45,6 @@ class VAEController:
                                   batch_size=1,
                                   is_training=False,
                                   reuse=False)
-
-    def buffer_append(self, arr):
-        assert arr.shape == self.image_size
-        self.buffer_pos += 1
-        if self.buffer_pos > self.buffer_size - 1:
-            self.buffer_pos = 0
-            self.buffer_full = True
-        self.buffer[self.buffer_pos] = arr
-
-    def buffer_reset(self):
-        self.buffer_pos = -1
-        self.buffer_full = False
-        self.buffer = np.zeros((self.buffer_size,
-                                self.image_size[0],
-                                self.image_size[1],
-                                self.image_size[2]),
-                               dtype=np.uint8)
-
-    def buffer_get_copy(self):
-        if self.buffer_full:
-            return self.buffer.copy()
-        return self.buffer[:self.buffer_pos]
 
     def encode(self, arr):
         assert arr.shape == self.image_size
@@ -89,36 +60,12 @@ class VAEController:
         arr = denormalize(arr, mode="rl")
         return arr
 
-    def optimize(self):
-        ds = self.buffer_get_copy()
-        # TODO: maybe do buffer reset.
-        # self.buffer_reset()
-
-        num_batches = int(np.floor(len(ds) / self.batch_size))
-
-        for epoch in range(self.epoch_per_optimization):
-            np.random.shuffle(ds)
-            for idx in range(num_batches):
-                batch = ds[idx * self.batch_size:(idx + 1) * self.batch_size]
-                obs = batch.astype(np.float32) / 255.0
-                feed = {self.vae.x: obs, }
-                (train_loss, r_loss, kl_loss, train_step, _) = self.vae.sess.run([
-                    self.vae.loss,
-                    self.vae.r_loss,
-                    self.vae.kl_loss,
-                    self.vae.global_step,
-                    self.vae.train_op
-                ], feed)
-                if (train_step + 1) % 50 == 0:
-                    print("VAE: optimization step",
-                          (train_step + 1), train_loss, r_loss, kl_loss)
-        self.set_target_params()
-
     def save(self, path):
         self.target_vae.save(path)
 
     def load(self, path):
         self.target_vae = ConvVAE.load(path)
+        self.z_size = self.target_vae.z_size
 
     def save_json(self, path):
         self.target_vae.save_json(path)

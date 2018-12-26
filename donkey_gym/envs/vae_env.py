@@ -17,13 +17,12 @@ from config import MAX_STEERING
 
 
 class DonkeyVAEEnv(DonkeyEnv):
-    def __init__(self, level=0, frame_skip=2,
-                 z_size=512, vae=None, const_throttle=None,
+    def __init__(self, level=0, frame_skip=2, vae=None, const_throttle=None,
                  min_throttle=0.2, max_throttle=0.5,
                  max_cte_error=3.0, n_command_history=0):
-        # super().__init__(level, time_step, frame_skip)
-        self.z_size = z_size
+        # super().__init__(level, frame_skip)
         self.vae = vae
+        self.z_size = vae.z_size
 
         self.const_throttle = const_throttle
         self.min_throttle = min_throttle
