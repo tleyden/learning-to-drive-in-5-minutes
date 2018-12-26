@@ -2,6 +2,7 @@
 # Author: Antonin Raffin
 import argparse
 import os
+import time
 from collections import OrderedDict
 from pprint import pprint
 

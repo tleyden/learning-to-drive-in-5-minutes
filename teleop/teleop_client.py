@@ -50,18 +50,18 @@ SMALL_FONT = pygame.font.SysFont('Open Sans', 20)
 KEY_MIN_DELAY = 0.4
 
 
-def control(x, theta, control_throttle, control_turn):
+def control(x, theta, control_throttle, control_steering):
     """
     Smooth control.
 
     :param x: (float)
     :param theta: (float)
     :param control_throttle: (float)
-    :param control_turn: (float)
+    :param control_steering: (float)
     :return: (float, float)
     """
     target_throttle = x
-    target_turn = MAX_TURN * theta
+    target_steering = MAX_TURN * theta
     if target_throttle > control_throttle:
         control_throttle = min(target_throttle, control_throttle + STEP_THROTTLE)
     elif target_throttle < control_throttle:
@@ -69,13 +69,13 @@ def control(x, theta, control_throttle, control_turn):
     else:
         control_throttle = target_throttle
 
-    if target_turn > control_turn:
-        control_turn = min(target_turn, control_turn + STEP_TURN)
-    elif target_turn < control_turn:
-        control_turn = max(target_turn, control_turn - STEP_TURN)
+    if target_steering > control_steering:
+        control_steering = min(target_steering, control_steering + STEP_TURN)
+    elif target_steering < control_steering:
+        control_steering = max(target_steering, control_steering - STEP_TURN)
     else:
-        control_turn = target_turn
-    return control_throttle, control_turn
+        control_steering = target_steering
+    return control_throttle, control_steering
 
 
 class TeleopEnv(object):
@@ -156,8 +156,8 @@ class TeleopEnv(object):
         self.is_recording = False
         self.is_manual = True
 
-        control_throttle, control_turn = 0, 0
-        action = [control_turn, control_throttle]
+        control_throttle, control_steering = 0, 0
+        action = [control_steering, control_throttle]
         self.update_screen(action)
 
         donkey_env = self.env
@@ -222,12 +222,12 @@ class TeleopEnv(object):
                 self.need_reset = True
 
             # Smooth control for teleoperation
-            control_throttle, control_turn = control(x, theta, control_throttle, control_turn)
+            control_throttle, control_steering = control(x, theta, control_throttle, control_steering)
             # Send Orders
             if self.model is None or self.is_manual:
-                t = (control_turn + MAX_TURN) / (2 * MAX_TURN)
-                angle_order = MIN_STEERING * t + MAX_STEERING * (1 - t)
-                self.action = [angle_order, control_throttle]
+                t = (control_steering + MAX_TURN) / (2 * MAX_TURN)
+                steering_order = MIN_STEERING * t + MAX_STEERING * (1 - t)
+                self.action = [steering_order, control_throttle]
             elif self.model is not None and not self.is_training:
                 if not self.observation_space.contains(self.current_obs):
                     self.current_obs = np.concatenate((self.current_obs,
@@ -262,37 +262,33 @@ class TeleopEnv(object):
 
     def update_screen(self, action):
         self.clear()
-        turn, throttle = action
-        self.write_text('Throttle: {:.2f}, Angular: {:.2f}'.format(throttle, turn), 20, 0, FONT, WHITE)
+        steering, throttle = action
+        self.write_text('Throttle: {:.2f}, Steering: {:.2f}'.format(throttle, steering), 20, 0, FONT, WHITE)
+
         help_str = 'Use arrow keys to move, q or ESCAPE to exit.'
         self.write_text(help_str, 20, 50, SMALL_FONT)
         help_2 = 'space key: toggle recording -- m: change mode -- r: reset -- l: reset track'
         self.write_text(help_2, 20, 100, SMALL_FONT)
-        self.write_text('Recording Status:', 20, 150, SMALL_FONT, WHITE)
 
+        self.write_text('Recording Status:', 20, 150, SMALL_FONT, WHITE)
         if self.is_recording:
             text, text_color = 'RECORDING', RED
         else:
             text, text_color = 'NOT RECORDING', GREEN
-
         self.write_text(text, 200, 150, SMALL_FONT, text_color)
 
         self.write_text('Mode:', 20, 200, SMALL_FONT, WHITE)
-
         if self.is_manual:
             text, text_color = 'MANUAL', GREEN
         else:
             text, text_color = 'AUTONOMOUS', ORANGE
-
         self.write_text(text, 200, 200, SMALL_FONT, text_color)
 
         self.write_text('Training Status:', 20, 250, SMALL_FONT, WHITE)
-
         if self.is_training:
             text, text_color = 'TRAINING', RED
         else:
             text, text_color = 'TESTING', GREEN
-
         self.write_text(text, 200, 250, SMALL_FONT, text_color)
 
 
@@ -344,14 +340,6 @@ if __name__ == '__main__':
     env = Recorder(env, folder=args.record_folder, verbose=1)
     try:
         env = TeleopEnv(env, model=model)
-        # model = ALGOS['sac']('CustomSACPolicy', env, verbose=1,
-        #                      buffer_size=10000, gradient_steps=300,
-        #                      ent_coef=0.2, batch_size=64, train_freq=2500,
-        #                      learning_rate=linear_schedule(3e-3))
-        # env.model = model
-        # model.learn(10000, log_interval=1)
-        # model.save("logs/sac/{}".format(ENV_ID))
-        # env.model = model
         env.wait()
     except KeyboardInterrupt as e:
         pass
