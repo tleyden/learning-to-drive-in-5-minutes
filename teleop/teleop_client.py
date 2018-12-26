@@ -241,6 +241,9 @@ class TeleopEnv(object):
                 else:
                     self.current_obs, _, _, _ = self.env.step(self.action)
 
+            if isinstance(self.env, Recorder):
+                self.env.save_image()
+
             self.update_screen(self.action)
 
             for event in pygame.event.get():

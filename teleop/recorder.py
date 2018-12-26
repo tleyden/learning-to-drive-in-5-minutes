@@ -48,6 +48,8 @@ class Recorder(object):
         # Convert RGB to BGR
         image = image[:, : , ::-1]
         cv2.imwrite("{}/{}.jpg".format(self.folder, self.current_idx), image)
+        if self.verbose >= 2:
+            print("Saving", "{}/{}.jpg".format(self.folder, self.current_idx))
         self.current_idx += 1
 
     def set_recording_status(self, is_recording):
