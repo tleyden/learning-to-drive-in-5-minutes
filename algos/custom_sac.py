@@ -41,7 +41,7 @@ class SACWithVAE(SAC):
                 # Update target network
                 self.sess.run(self.target_update_op)
         if self.n_updates > 0:
-            print("SAC training duration: {:.2f}".format(time.time() - train_start))
+            print("SAC training duration: {:.2f}s".format(time.time() - train_start))
         return mb_infos_vals
 
     def learn(self, total_timesteps, callback=None, seed=None,

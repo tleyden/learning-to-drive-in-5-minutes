@@ -106,8 +106,10 @@ class DataLoader(object):
         :param minibatchlist: ([np.array]) list of observations indices (grouped per minibatch)
         :param images_path: (np.array) Array of path to images
         :param n_workers: (int) number of preprocessing worker (load and preprocess each image)
+        :param folder: (str)
         :param infinite_loop: (bool) whether to have an iterator that can be resetted, set to False, it
         :param max_queue_len: (int) Max number of minibatches that can be preprocessed at the same time
+        :param is_training: (bool)
         """
         super(DataLoader, self).__init__()
         self.n_workers = n_workers

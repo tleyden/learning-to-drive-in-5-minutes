@@ -22,7 +22,7 @@ class VAEController:
                  batch_size=64):
         # VAE input and output shapes
         self.z_size = z_size
-        self.image_size = input_dimension
+        self.input_dimension = input_dimension
 
         # VAE params
         self.learning_rate = learning_rate
@@ -48,7 +48,7 @@ class VAEController:
                                       reuse=False)
 
     def encode(self, observation):
-        assert observation.shape == self.image_size
+        assert observation.shape == self.input_dimension
         # Normalize
         observation = preprocess_input(observation.astype(np.float32), mode="rl")[None]
         return self.target_vae.encode(observation)

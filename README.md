@@ -9,9 +9,6 @@ Video with [real RC car](https://www.youtube.com/watch?v=6JUjDw9tfD4).
 
 Code that implements approach similar to described in ["Learning to Drive in a Day"](https://arxiv.org/pdf/1807.00412.pdf) paper.
 
-Missing parts:
-- Prioritized Experience Replay in DDPG. Right now we randomly sample.
-- Params well tuning to drive more smoothly.
 
 # Quick start
 
@@ -36,6 +33,12 @@ python enjoy.py --algo sac -vae logs/vae.pkl --exp-id 0 -n 2000
 python -m vae.train --n-epochs 50 --verbose 0 --z-size 128 -f logs/recorded_data/
 ```
 
+## Train in teleoparation mode
+
+```
+python train.py --algo sac -vae logs/vae.pkl -n 5000 --teleop
+```
+
 ## Test in teleoparation mode
 
 ```
@@ -50,4 +53,5 @@ python -m teleop.teleop_client --algo sac -vae logs/vae.pkl --exp-id 0
 - [Stable-Baselines](https://github.com/hill-a/stable-baselines) for DDPG/SAC and PPO implementations.
 - [RL Baselines Zoo](https://github.com/araffin/rl-baselines-zoo) for training/enjoy scripts.
 - [S-RL Toolbox](https://github.com/araffin/robotics-rl-srl) for the data loader
+- [Racing robot](https://github.com/sergionr2/RacingRobot) for the teleoperation
 - [World Models Experiments](https://github.com/hardmaru/WorldModelsExperiments) for VAE implementation.

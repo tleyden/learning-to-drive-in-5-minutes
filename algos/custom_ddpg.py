@@ -104,7 +104,7 @@ class DDPGWithVAE(DDPG):
                         critic_losses.append(critic_loss)
                         actor_losses.append(actor_loss)
                         self._update_target_net()
-                    print("DDPG training duration: {:.2f}".format(time.time() - train_start))
+                    print("DDPG training duration: {:.2f}s".format(time.time() - train_start))
 
                     mpi_size = MPI.COMM_WORLD.Get_size()
                     # Log stats.

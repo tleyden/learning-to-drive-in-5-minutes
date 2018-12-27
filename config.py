@@ -25,7 +25,7 @@ MIN_STEERING = - MAX_STEERING
 # Simulation config
 MIN_THROTTLE = 0.4
 MAX_THROTTLE = 0.6
-N_COMMAND_HISTORY = 10
+N_COMMAND_HISTORY = 0
 # Action repeat
 FRAME_SKIP = 2
 Z_SIZE = 512 # Only used for random features
