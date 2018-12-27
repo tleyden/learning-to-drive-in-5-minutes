@@ -19,7 +19,9 @@ from config import INPUT_DIM, IMAGE_WIDTH, IMAGE_HEIGHT, ROI, THROTTLE_REWARD_WE
 
 
 class DonkeyUnitySimContoller:
-
+    """
+    Wrapper for communicating with unity simulation
+    """
     def __init__(self, level, port=9090, max_cte_error=3.0):
         self.level = level
         self.verbose = False

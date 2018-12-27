@@ -12,6 +12,7 @@ class Recorder(object):
     :param start_recording: (bool)
     :param verbose: (int)
     """
+
     def __init__(self, env, folder='logs/recorded_data/', start_recording=False, verbose=0):
         super(Recorder, self).__init__()
         self.env = env
@@ -46,7 +47,7 @@ class Recorder(object):
     def save_image(self):
         image = self.env.render(mode='rgb_array')
         # Convert RGB to BGR
-        image = image[:, : , ::-1]
+        image = image[:, :, ::-1]
         cv2.imwrite("{}/{}.jpg".format(self.folder, self.current_idx), image)
         if self.verbose >= 2:
             print("Saving", "{}/{}.jpg".format(self.folder, self.current_idx))

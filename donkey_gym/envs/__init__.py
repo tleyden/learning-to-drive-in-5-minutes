@@ -1,1 +1,1 @@
-from donkey_gym.envs.donkey_env import *
+from donkey_gym.envs.vae_env import *

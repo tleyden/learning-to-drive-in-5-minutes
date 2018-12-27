@@ -1,20 +1,20 @@
 # Adapted from https://github.com/sergionr2/RacingRobot
 # Author: Antonin Raffin
+import argparse
 import os
 import time
-import argparse
 from threading import Event, Thread
 
-import pygame
 import numpy as np
+import pygame
 from pygame.locals import *
-from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 from stable_baselines.bench import Monitor
+from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 
 from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE, \
     LEVEL, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
-from utils.utils import ALGOS, get_latest_run_id, load_vae, linear_schedule
+from utils.utils import ALGOS, get_latest_run_id, load_vae
 from .recorder import Recorder
 
 UP = (1, 0)
@@ -237,7 +237,7 @@ class TeleopEnv(object):
             if not (self.is_training and not self.is_manual):
                 if self.is_manual:
                     donkey_env.viewer.take_action(self.action)
-                    self.current_obs, _, _, _ = donkey_env._observe()
+                    self.current_obs, _, _, _ = donkey_env.observe()
                 else:
                     self.current_obs, _, _, _ = self.env.step(self.action)
 

@@ -5,11 +5,11 @@ import os
 
 
 class DonkeyUnityProcess(object):
-
+    """
+    Utility class to start unity process if needed
+    """
     def __init__(self):
-        self.proc1 = None
-
-    # ------ Launch Unity Env ----------- #
+        self.process = None
 
     def start(self, sim_path, headless=False, port=9090):
 
@@ -21,19 +21,19 @@ class DonkeyUnityProcess(object):
 
         # Launch Unity environment
         if headless:
-            self.proc1 = subprocess.Popen(
+            self.process = subprocess.Popen(
                 [sim_path, '-nographics', '-batchmode'] + port_args)
         else:
-            self.proc1 = subprocess.Popen(
+            self.process = subprocess.Popen(
                 [sim_path] + port_args)
 
-        print("donkey subprocess started")
+        print("Donkey subprocess started")
 
     def quit(self):
         """
         Shutdown unity environment
         """
-        if self.proc1 is not None:
-            print("closing donkey sim subprocess")
-            self.proc1.kill()
-            self.proc1 = None
+        if self.process is not None:
+            print("Closing donkey sim subprocess")
+            self.process.kill()
+            self.process = None
