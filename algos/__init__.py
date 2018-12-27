@@ -1,2 +1,2 @@
-from .ddpg_with_vae import DDPGWithVAE as DDPG
-from .sac_vae import SACWithVAE as SAC
+from .custom_ddpg import DDPGWithVAE as DDPG
+from .custom_sac import SACWithVAE as SAC
