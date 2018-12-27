@@ -1,3 +1,6 @@
+"""
+Train a VAE model using saved images in a folder
+"""
 import argparse
 import os
 
@@ -64,7 +67,7 @@ vae_controller.vae = vae
 for epoch in range(args.n_epochs):
     pbar = tqdm(total=len(minibatchlist))
     for obs in data_loader:
-        feed = {vae.x: obs}
+        feed = {vae.input_tensor: obs}
         (train_loss, r_loss, kl_loss, train_step, _) = vae.sess.run([
             vae.loss,
             vae.r_loss,

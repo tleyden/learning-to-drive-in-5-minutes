@@ -31,7 +31,7 @@ class ConvVAE(object):
     :param learning_rate: (float)
     :param kl_tolerance: (float)
     :param is_training: (bool)
-    :param beta: (float)
+    :param beta: (float) weight for KL loss
     :param reuse: (bool)
     """
 
@@ -45,6 +45,9 @@ class ConvVAE(object):
         self.beta = beta
         self.reuse = reuse
         self.graph = None
+        self.input_tensor = None
+        self.output_tensor = None
+
         with tf.variable_scope('conv_vae', reuse=self.reuse):
             self._build_graph()
 
@@ -56,10 +59,10 @@ class ConvVAE(object):
     def _build_graph(self):
         self.graph = tf.Graph()
         with self.graph.as_default():
-            self.x = tf.placeholder(tf.float32, shape=[None, 80, 160, 3])
+            self.input_tensor = tf.placeholder(tf.float32, shape=[None, 80, 160, 3])
 
             # Encoder
-            h = tf.layers.conv2d(self.x, 32, 4, strides=2, activation=tf.nn.relu, name="enc_conv1")
+            h = tf.layers.conv2d(self.input_tensor, 32, 4, strides=2, activation=tf.nn.relu, name="enc_conv1")
             h = tf.layers.conv2d(h, 64, 4, strides=2, activation=tf.nn.relu, name="enc_conv2")
             h = tf.layers.conv2d(h, 128, 4, strides=2, activation=tf.nn.relu, name="enc_conv3")
             h = tf.layers.conv2d(h, 256, 4, strides=2, activation=tf.nn.relu, name="enc_conv4")
@@ -80,17 +83,15 @@ class ConvVAE(object):
             h = tf.layers.conv2d_transpose(h, 128, 4, strides=2, activation=tf.nn.relu, name="dec_deconv1")
             h = tf.layers.conv2d_transpose(h, 64, 4, strides=2, activation=tf.nn.relu, name="dec_deconv2")
             h = tf.layers.conv2d_transpose(h, 32, 5, strides=2, activation=tf.nn.relu, name="dec_deconv3")
-            self.y = tf.layers.conv2d_transpose(h, 3, 4, strides=2, activation=tf.nn.sigmoid, name="dec_deconv4")
+            self.output_tensor = tf.layers.conv2d_transpose(h, 3, 4, strides=2, activation=tf.nn.sigmoid,
+                                                            name="dec_deconv4")
 
             # train ops
             if self.is_training:
                 self.global_step = tf.Variable(0, name='global_step', trainable=False)
-
-                # eps = 1e-6 # avoid taking log of zero
-
                 # reconstruction loss
                 self.r_loss = tf.reduce_sum(
-                    tf.square(self.x - self.y),
+                    tf.square(self.input_tensor - self.output_tensor),
                     reduction_indices=[1, 2, 3]
                 )
                 self.r_loss = tf.reduce_mean(self.r_loss)
@@ -100,7 +101,8 @@ class ConvVAE(object):
                     (1 + self.logvar - tf.square(self.mu) - tf.exp(self.logvar)),
                     reduction_indices=1
                 )
-                self.kl_loss = tf.maximum(self.kl_loss, self.kl_tolerance * self.z_size)
+                if self.kl_tolerance > 0:
+                    self.kl_loss = tf.maximum(self.kl_loss, self.kl_tolerance * self.z_size)
                 self.kl_loss = tf.reduce_mean(self.kl_loss)
 
                 self.loss = self.r_loss + self.beta * self.kl_loss
@@ -117,19 +119,19 @@ class ConvVAE(object):
             self.init = tf.global_variables_initializer()
 
     def _init_session(self):
-        """Launch TensorFlow session and initialize variables"""
+        """Launch tensorflow session and initialize variables"""
         self.sess = tf.Session(graph=self.graph)
         self.sess.run(self.init)
 
     def close_sess(self):
-        """ Close TensorFlow session """
+        """ Close tensorflow session """
         self.sess.close()
 
-    def encode(self, x):
-        return self.sess.run(self.z, feed_dict={self.x: x})
+    def encode(self, input_tensor):
+        return self.sess.run(self.z, feed_dict={self.input_tensor: input_tensor})
 
     def decode(self, z):
-        return self.sess.run(self.y, feed_dict={self.z: z})
+        return self.sess.run(self.output_tensor, feed_dict={self.z: z})
 
     def get_model_params(self):
         # get trainable params.
@@ -146,15 +148,6 @@ class ConvVAE(object):
                 model_params.append(params)
                 model_shapes.append(p.shape)
         return model_params, model_shapes, model_names
-
-    def get_random_model_params(self, stdev=0.5):
-        # get random params.
-        _, mshape, _ = self.get_model_params()
-        rparam = []
-        for s in mshape:
-            # rparam.append(np.random.randn(*s)*stdev)
-            rparam.append(np.random.standard_cauchy(s) * stdev)  # spice things up!
-        return rparam
 
     def set_params(self, params):
         assign_ops = []
@@ -189,10 +182,6 @@ class ConvVAE(object):
             qparams.append(p)
         with open(jsonfile, 'wt') as outfile:
             json.dump(qparams, outfile, sort_keys=True, indent=0, separators=(',', ': '))
-
-    def set_random_params(self, stdev=0.5):
-        rparam = self.get_random_model_params(stdev)
-        self.set_model_params(rparam)
 
     def save_model(self, model_save_path):
         sess = self.sess

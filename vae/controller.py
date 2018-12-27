@@ -10,18 +10,19 @@ from .data_loader import denormalize, preprocess_input
 
 class VAEController:
     """
-    :param z_size: (int)
-    :param image_size: ((int, int, int))
+    :param z_size: (int) latent space dimension
+    :param input_dimension: ((int, int, int)) input dimension
     :param learning_rate: (float)
-    :param kl_tolerance: (float)
+    :param kl_tolerance: (float) Clip the KL loss
+        max_kl_loss = kl_tolerance * z_size
     :param batch_size: (int)
     """
-    def __init__(self, z_size=None, image_size=(80, 160, 3),
+    def __init__(self, z_size=None, input_dimension=(80, 160, 3),
                  learning_rate=0.0001, kl_tolerance=0.5,
                  batch_size=64):
         # VAE input and output shapes
         self.z_size = z_size
-        self.image_size = image_size
+        self.image_size = input_dimension
 
         # VAE params
         self.learning_rate = learning_rate
@@ -46,11 +47,11 @@ class VAEController:
                                       is_training=False,
                                       reuse=False)
 
-    def encode(self, arr):
-        assert arr.shape == self.image_size
+    def encode(self, observation):
+        assert observation.shape == self.image_size
         # Normalize
-        arr = preprocess_input(arr.astype(np.float32), mode="rl")[None]
-        return self.target_vae.encode(arr)
+        observation = preprocess_input(observation.astype(np.float32), mode="rl")[None]
+        return self.target_vae.encode(observation)
 
     def decode(self, arr):
         assert arr.shape == (1, self.z_size)
@@ -76,10 +77,3 @@ class VAEController:
     def set_target_params(self):
         params = self.vae.get_params()
         self.target_vae.set_params(params)
-
-    def reset_target_vae(self):
-        self.target_vae = ConvVAE(z_size=self.z_size,
-                                  batch_size=1,
-                                  is_training=False,
-                                  reuse=False)
-        self.set_target_params()

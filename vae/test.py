@@ -1,3 +1,6 @@
+"""
+Test a trained vae
+"""
 import argparse
 import os
 
