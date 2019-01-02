@@ -1,11 +1,10 @@
 DonkeyVae-v0:
   # normalize: "{'norm_obs': True, 'norm_reward': False}"
-  n_timesteps: !!float 5000
+  n_timesteps: !!float 10000
   policy: 'MlpPolicy'
-  # n_steps: 256
   # n_steps min
-  n_steps: 128
+  n_steps: 256
   noptepochs: 10
-  nminibatches: 2
+  nminibatches: 4
   ent_coef: 0.0
-  learning_rate: !!float 3e-3
+  learning_rate: lin_3e-3

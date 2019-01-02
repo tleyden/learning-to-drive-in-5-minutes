@@ -12,7 +12,7 @@ from stable_baselines.bench import Monitor
 from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 
 from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE, \
-    LEVEL, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID
+    LEVEL, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID, FRAME_SKIP
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from utils.utils import ALGOS, get_latest_run_id, load_vae
 from .recorder import Recorder
@@ -48,7 +48,7 @@ pygame.font.init()
 FONT = pygame.font.SysFont('Open Sans', 25)
 SMALL_FONT = pygame.font.SysFont('Open Sans', 20)
 KEY_MIN_DELAY = 0.4
-
+MAX_N_OUT_OF_BOUND = FRAME_SKIP
 
 def control(x, theta, control_throttle, control_steering):
     """
@@ -100,6 +100,7 @@ class TeleopEnv(object):
         self.observation_space = env.observation_space
         self.action_space = env.action_space
         self.donkey_env = None
+        self.n_out_of_bound = 0
         self.start_process()
 
     def start_process(self):
@@ -115,7 +116,12 @@ class TeleopEnv(object):
         self.current_obs, reward, done, info = self.env.step(action)
         # Overwrite done
         if self.done_event.is_set():
-            done = True
+            done = False
+            # Negative reward for several steps
+            if self.n_out_of_bound < MAX_N_OUT_OF_BOUND:
+                self.n_out_of_bound += 1
+            else:
+                done = True
             reward = -1
         else:
             done = False
@@ -125,6 +131,7 @@ class TeleopEnv(object):
         return self.env.render(mode)
 
     def reset(self):
+        self.n_out_of_bound = 0
         # Disable reset after init
         if self.need_reset:
             self.need_reset = False
