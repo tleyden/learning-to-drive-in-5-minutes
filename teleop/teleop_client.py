@@ -88,6 +88,10 @@ class TeleopEnv(object):
         self.is_manual = True
         self.is_recording = is_recording
         self.is_training = is_training
+        # For keyboard trigger
+        self.fill_buffer = False
+        # For display
+        self.is_filling = False
         self.current_obs = None
         self.exit_event = Event()
         self.done_event = Event()
@@ -160,8 +164,6 @@ class TeleopEnv(object):
         self.window = pygame.display.set_mode((800, 500), RESIZABLE)
 
         end = False
-        self.is_recording = False
-        self.is_manual = True
 
         control_throttle, control_steering = 0, 0
         action = [control_steering, control_throttle]
@@ -182,8 +184,12 @@ class TeleopEnv(object):
         assert isinstance(donkey_env, DonkeyVAEEnv), print(donkey_env)
         self.donkey_env = donkey_env
 
-        last_time_pressed = {'space': 0, 'm': 0, 't': 0}
+        last_time_pressed = {'space': 0, 'm': 0, 't': 0, 'b': 0, 'o': 0}
         self.current_obs = self.reset()
+
+        if self.model is not None:
+            # Prevent error (uninitialized value)
+            self.model.n_updates = 0
 
         while not end:
             x, theta = 0, 0
@@ -220,8 +226,22 @@ class TeleopEnv(object):
                 # avoid multiple key press
                 last_time_pressed['t'] = time.time()
 
+            if keys[K_b] and (time.time() - last_time_pressed['b']) > KEY_MIN_DELAY:
+                self.fill_buffer = not self.fill_buffer
+                # avoid multiple key press
+                last_time_pressed['b'] = time.time()
+
             if keys[K_r]:
                 self.current_obs = self.env.reset()
+
+            if keys[K_o]:
+                if (self.is_manual
+                    and self.model is not None
+                    and hasattr(self.model, 'optimize')
+                    and (time.time() - last_time_pressed['o']) > KEY_MIN_DELAY):
+                    print("Optimizing")
+                    self.model.optimize(len(self.model.replay_buffer), None, self.model.learning_rate(1))
+                    last_time_pressed['o'] = time.time()
 
             if keys[K_l]:
                 self.env.reset()
@@ -241,12 +261,22 @@ class TeleopEnv(object):
                                                        np.zeros_like(self.donkey_env.command_history)), axis=-1)
                 self.action, _ = self.model.predict(self.current_obs, deterministic=self.deterministic)
 
+            self.is_filling = False
             if not (self.is_training and not self.is_manual):
-                if self.is_manual:
+                if self.is_manual and not self.fill_buffer:
                     donkey_env.viewer.take_action(self.action)
                     self.current_obs, _, _, _ = donkey_env.observe()
                 else:
-                    self.current_obs, _, _, _ = self.env.step(self.action)
+                    if self.fill_buffer:
+                        old_obs = self.current_obs
+                    self.current_obs, reward, done, _ = self.env.step(self.action)
+
+                    # Store the transition in the replay buffer
+                    if self.fill_buffer and hasattr(self.model, 'replay_buffer'):
+                        assert old_obs is not None
+                        if old_obs.shape[1] == self.current_obs.shape[1]:
+                            self.is_filling = True
+                            self.model.replay_buffer.add(old_obs, self.action, reward, self.current_obs, float(done))
 
             if isinstance(self.env, Recorder):
                 self.env.save_image()
@@ -301,6 +331,11 @@ class TeleopEnv(object):
             text, text_color = 'TESTING', GREEN
         self.write_text(text, 200, 250, SMALL_FONT, text_color)
 
+        if self.is_filling:
+            text, text_color = 'FILLING THE BUFFER', RED
+        else:
+            text, text_color = '', GREEN
+        self.write_text(text, 200, 300, SMALL_FONT, text_color)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
