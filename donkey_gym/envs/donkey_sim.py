@@ -208,6 +208,8 @@ class DonkeyUnitySimHandler(IMesgHandler):
         # Region of interest
         r = ROI
         image = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+        # Convert RGB to BGR
+        image = image[:, :, ::-1]
         self.image_array = image
         # Here resize is not useful for now (the image have already the right dimension)
         # self.image_array = cv2.resize(image, (IMAGE_WIDTH, IMAGE_HEIGHT))

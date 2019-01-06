@@ -6,8 +6,8 @@ DonkeyVae-v0:
   # learning_rate: lin_3e-3
   buffer_size: 10000
   batch_size: 64
-  train_freq: 2500
-  ent_coef: 0.08
+  train_freq: 3000
+  ent_coef: 0.05
   gradient_steps: 300
   learning_starts: 300
   # frame_stack: 2

@@ -51,6 +51,9 @@ class VAEController:
                                       reuse=False)
 
     def encode_from_raw_image(self, raw_image):
+        """
+        :param raw_image: (np.ndarray) BGR image
+        """
         r = ROI
         # Crop image
         im = raw_image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
@@ -64,7 +67,7 @@ class VAEController:
         return self.target_vae.encode(observation)
 
     def decode(self, arr):
-        assert arr.shape == (1, self.z_size)
+        assert arr.shape == (1, self.z_size), print(arr.shape, (1, self.z_size))
         # Decode
         arr = self.target_vae.decode(arr)
         # Denormalize

@@ -315,12 +315,13 @@ class TeleopEnv(object):
         help_2 = 'space key: toggle recording -- m: change mode -- r: reset -- l: reset track'
         self.write_text(help_2, 20, 100, SMALL_FONT)
 
-        self.write_text('Recording Status:', 20, 150, SMALL_FONT, WHITE)
-        if self.is_recording:
-            text, text_color = 'RECORDING', RED
-        else:
-            text, text_color = 'NOT RECORDING', GREEN
-        self.write_text(text, 200, 150, SMALL_FONT, text_color)
+        if isinstance(self.env, Recorder):
+            self.write_text('Recording Status:', 20, 150, SMALL_FONT, WHITE)
+            if self.is_recording:
+                text, text_color = 'RECORDING', RED
+            else:
+                text, text_color = 'NOT RECORDING', GREEN
+            self.write_text(text, 200, 150, SMALL_FONT, text_color)
 
         self.write_text('Mode:', 20, 200, SMALL_FONT, WHITE)
         if self.is_manual:
@@ -347,11 +348,13 @@ class TeleopEnv(object):
             if self.image_surface is None:
                  self.image_surface = pygame.pixelcopy.make_surface(current_image)
             pygame.pixelcopy.array_to_surface(self.image_surface, current_image)
-            self.window.blit(self.image_surface, (0, 350))
+            self.window.blit(self.image_surface, (20, 350))
 
-        if self.donkey_env is not None and self.donkey_env.vae is not None:
+        if (self.donkey_env is not None
+            and self.donkey_env.vae is not None
+            and self.current_obs is not None):
             vae_dim = self.donkey_env.vae.z_size
-            encoded = self.current_obs[:vae_dim]
+            encoded = self.current_obs[:, :vae_dim]
             reconstructed_image = self.donkey_env.vae.decode(encoded)[0]
             # Convert BGR to RGB
             reconstructed_image = reconstructed_image[:, :, ::-1]

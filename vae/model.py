@@ -75,10 +75,11 @@ class ConvVAE(object):
             self.sigma = tf.exp(self.logvar / 2.0)
             self.epsilon = tf.random_normal([self.batch_size, self.z_size])
             # self.epsilon = tf.random_normal([None, self.z_size])
-            if self.is_training:
-                self.z = self.mu + self.sigma * self.epsilon
-            else:
-                self.z = self.mu
+            self.z = self.mu + self.sigma * self.epsilon
+            # if self.is_training:
+            #     self.z = self.mu + self.sigma * self.epsilon
+            # else:
+            #     self.z = self.mu
 
             # Decoder
             h = tf.layers.dense(self.z, 3 * 8 * 256, name="dec_fc")
