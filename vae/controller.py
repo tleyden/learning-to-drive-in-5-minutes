@@ -4,6 +4,7 @@
 
 import numpy as np
 
+from config import ROI
 from .model import ConvVAE
 from .data_loader import denormalize, preprocess_input
 
@@ -16,10 +17,11 @@ class VAEController:
     :param kl_tolerance: (float) Clip the KL loss
         max_kl_loss = kl_tolerance * z_size
     :param batch_size: (int)
+    :param normalization_mode: (str)
     """
     def __init__(self, z_size=None, input_dimension=(80, 160, 3),
                  learning_rate=0.0001, kl_tolerance=0.5,
-                 batch_size=64):
+                 batch_size=64, normalization_mode='rl'):
         # VAE input and output shapes
         self.z_size = z_size
         self.input_dimension = input_dimension
@@ -30,6 +32,7 @@ class VAEController:
 
         # Training params
         self.batch_size = batch_size
+        self.normalization_mode = normalization_mode
 
         self.vae = None
         self.target_vae = None
@@ -47,10 +50,17 @@ class VAEController:
                                       is_training=False,
                                       reuse=False)
 
+    def encode_from_raw_image(self, raw_image):
+        r = ROI
+        # Crop image
+        im = raw_image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+        return self.encode(im)
+
     def encode(self, observation):
         assert observation.shape == self.input_dimension
         # Normalize
-        observation = preprocess_input(observation.astype(np.float32), mode="rl")[None]
+        observation = preprocess_input(observation.astype(np.float32),
+                                       mode=self.normalization_mode)[None]
         return self.target_vae.encode(observation)
 
     def decode(self, arr):
@@ -58,7 +68,7 @@ class VAEController:
         # Decode
         arr = self.target_vae.decode(arr)
         # Denormalize
-        arr = denormalize(arr, mode="rl")
+        arr = denormalize(arr, mode=self.normalization_mode)
         return arr
 
     def save(self, path):

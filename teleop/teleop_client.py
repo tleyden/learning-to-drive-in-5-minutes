@@ -105,6 +105,9 @@ class TeleopEnv(object):
         self.action_space = env.action_space
         self.donkey_env = None
         self.n_out_of_bound = 0
+        self.current_image = None
+        self.image_surface = None
+        self.decoded_surface = None
         self.start_process()
 
     def start_process(self):
@@ -281,6 +284,8 @@ class TeleopEnv(object):
             if isinstance(self.env, Recorder):
                 self.env.save_image()
 
+            self.current_image = self.env.render(mode='rgb_array')
+
             self.update_screen(self.action)
 
             for event in pygame.event.get():
@@ -336,6 +341,25 @@ class TeleopEnv(object):
         else:
             text, text_color = '', GREEN
         self.write_text(text, 200, 300, SMALL_FONT, text_color)
+
+        if self.current_image is not None:
+            current_image = np.swapaxes(self.current_image, 0, 1)
+            if self.image_surface is None:
+                 self.image_surface = pygame.pixelcopy.make_surface(current_image)
+            pygame.pixelcopy.array_to_surface(self.image_surface, current_image)
+            self.window.blit(self.image_surface, (0, 350))
+
+        if self.donkey_env is not None and self.donkey_env.vae is not None:
+            vae_dim = self.donkey_env.vae.z_size
+            encoded = self.current_obs[:vae_dim]
+            reconstructed_image = self.donkey_env.vae.decode(encoded)[0]
+            # Convert BGR to RGB
+            reconstructed_image = reconstructed_image[:, :, ::-1]
+            reconstructed_image = np.swapaxes(reconstructed_image, 0, 1)
+            if self.decoded_surface is None:
+                 self.decoded_surface = pygame.pixelcopy.make_surface(reconstructed_image)
+            pygame.pixelcopy.array_to_surface(self.decoded_surface, reconstructed_image)
+            self.window.blit(self.decoded_surface, (220, 350))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

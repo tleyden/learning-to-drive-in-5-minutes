@@ -16,7 +16,7 @@ INPUT_DIM = (IMAGE_HEIGHT, IMAGE_WIDTH, N_CHANNELS)
 # Reward parameters
 THROTTLE_REWARD_WEIGHT = 0.5
 JERK_REWARD_WEIGHT = 1.0
-MAX_STEERING_DIFF = 0.05
+MAX_STEERING_DIFF = 0.0
 # Symmetric command
 
 MAX_STEERING = 1
@@ -33,7 +33,7 @@ Z_SIZE = 512 # Only used for random features
 # it allows smoother control
 TEST_FRAME_SKIP = 1
 MAX_CTE_ERROR = 10.0
-LEVEL = 1
+LEVEL = 0
 BASE_ENV = "DonkeyVae-v0"
 ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
 SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',

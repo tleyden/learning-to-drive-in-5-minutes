@@ -36,10 +36,8 @@ for i in range(args.n_samples):
     image_idx = np.random.randint(n_samples)
     image_path = args.folder + images[image_idx]
     image = cv2.imread(image_path)
-    r = ROI
-    im = image[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
 
-    encoded = vae.encode(im)
+    encoded = vae.encode_from_raw_image(image)
     reconstructed_image = vae.decode(encoded)[0]
     # Plot reconstruction
     cv2.imshow("Original", image)

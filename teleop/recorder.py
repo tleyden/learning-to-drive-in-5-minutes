@@ -38,6 +38,12 @@ class Recorder(object):
             self.save_image()
         return obs
 
+    def render(self, mode='rgb_array'):
+        return self.env.render(mode=mode)
+
+    def seed(self, seed=None):
+        return self.env.seed(seed)
+
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
         if self.is_recording:
