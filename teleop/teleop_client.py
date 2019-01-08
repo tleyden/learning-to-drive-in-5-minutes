@@ -148,10 +148,6 @@ class TeleopEnv(object):
 
     def wait_for_teleop_reset(self):
         self.ready_event.wait()
-        if self.donkey_env.n_command_history > 0:
-            if not self.observation_space.contains(self.current_obs):
-                self.current_obs = np.concatenate((self.current_obs,
-                                                   np.zeros_like(self.donkey_env.command_history)), axis=-1)
         return self.reset()
 
     def exit(self):
@@ -259,16 +255,16 @@ class TeleopEnv(object):
                 steering_order = MIN_STEERING * t + MAX_STEERING * (1 - t)
                 self.action = [steering_order, control_throttle]
             elif self.model is not None and not self.is_training:
-                if not self.observation_space.contains(self.current_obs):
-                    self.current_obs = np.concatenate((self.current_obs,
-                                                       np.zeros_like(self.donkey_env.command_history)), axis=-1)
                 self.action, _ = self.model.predict(self.current_obs, deterministic=self.deterministic)
 
             self.is_filling = False
             if not (self.is_training and not self.is_manual):
                 if self.is_manual and not self.fill_buffer:
                     donkey_env.viewer.take_action(self.action)
-                    self.current_obs, _, _, _ = donkey_env.observe()
+                    self.current_obs, reward, done, info = donkey_env.observe()
+                    self.current_obs, _, _, _ = donkey_env.postprocessing_step(self.action, self.current_obs,
+                                                                               reward, done, info)
+
                 else:
                     if self.fill_buffer:
                         old_obs = self.current_obs

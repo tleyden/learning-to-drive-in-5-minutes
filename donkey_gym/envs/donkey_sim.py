@@ -14,7 +14,7 @@ from PIL import Image
 from donkey_gym.core.fps import FPSTimer
 from donkey_gym.core.tcp_server import IMesgHandler, SimServer
 from config import INPUT_DIM, IMAGE_WIDTH, IMAGE_HEIGHT, ROI, THROTTLE_REWARD_WEIGHT,\
-    MAX_THROTTLE, JERK_REWARD_WEIGHT, MIN_STEERING, MAX_STEERING, MAX_STEERING_DIFF
+    MAX_THROTTLE, JERK_REWARD_WEIGHT, MIN_STEERING, MAX_STEERING, MAX_STEERING_DIFF, MIN_THROTTLE
 
 
 
@@ -174,25 +174,19 @@ class DonkeyUnitySimHandler(IMesgHandler):
     def is_game_over(self):
         return self.hit != "none" or math.fabs(self.cte) > self.max_cte_error
 
-    # ------ RL interface ----------- #
-
-    # Use velocity (m/s) as reward for every step,
-    # except when episode done (failed).
+    # Use throttle as reward for every step
+    # + life bonus
+    # except when episode done (failed)
+    # add extra penalization for high throttle
     def calc_reward(self, done):
         if done:
-            return -1
+            # Number
+            norm_throttle = (self.last_throttle - MIN_THROTTLE) / (MAX_THROTTLE - MIN_THROTTLE)
+            return -1 - norm_throttle
         # 1 per timesteps + velocity - jerk_penalty
         throttle_reward = THROTTLE_REWARD_WEIGHT * (self.last_throttle / MAX_THROTTLE)
-        jerk_penalty = 0
-        if self.prev_steering is not None:
-            steering_diff = (self.prev_steering - self.steering) / (MAX_STEERING - MIN_STEERING)
 
-            if abs(steering_diff) > MAX_STEERING_DIFF:
-                jerk_penalty = JERK_REWARD_WEIGHT * (steering_diff ** 2)
-            else:
-                jerk_penalty = 0
-            # print(jerk_penalty, steering_diff)
-        return 1 + throttle_reward - jerk_penalty
+        return 1 + throttle_reward
 
     # ------ Socket interface ----------- #
 

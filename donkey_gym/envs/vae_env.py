@@ -7,8 +7,7 @@ import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from config import INPUT_DIM
-from config import MAX_STEERING
+from config import INPUT_DIM, MIN_STEERING, MAX_STEERING, JERK_REWARD_WEIGHT, MAX_STEERING_DIFF
 from donkey_gym.core.donkey_proc import DonkeyUnityProcess
 from .donkey_sim import DonkeyUnitySimContoller
 
@@ -35,8 +34,8 @@ class DonkeyVAEEnv(gym.Env):
 
     def __init__(self, level=0, frame_skip=2, vae=None, const_throttle=None,
                  min_throttle=0.2, max_throttle=0.5,
-                 max_cte_error=3.0, n_command_history=0):
-        # super().__init__(level, frame_skip)
+                 max_cte_error=3.0, n_command_history=0,
+                 n_stack=1):
         self.vae = vae
         self.z_size = None
         if vae is not None:
@@ -51,6 +50,9 @@ class DonkeyVAEEnv(gym.Env):
         self.n_commands = 2
         self.command_history = np.zeros((1, self.n_commands * n_command_history))
         self.n_command_history = n_command_history
+        # Custom frame-stack
+        self.n_stack = n_stack
+        self.stacked_obs = None
 
         exe_path = os.environ.get('DONKEY_SIM_PATH')
         if exe_path is None:
@@ -94,6 +96,13 @@ class DonkeyVAEEnv(gym.Env):
                                                 shape=(1, self.z_size + self.n_commands * n_command_history),
                                                 dtype=np.float32)
 
+        if n_stack > 1:
+            obs_space = self.observation_space
+            low = np.repeat(obs_space.low, self.n_stack, axis=-1)
+            high = np.repeat(obs_space.high, self.n_stack, axis=-1)
+            self.stacked_obs = np.zeros(low.shape, low.dtype)
+            self.observation_space = spaces.Box(low=low, high=high, dtype=obs_space.dtype)
+
         self.seed()
         # Frame Skipping
         self.frame_skip = frame_skip
@@ -105,6 +114,40 @@ class DonkeyVAEEnv(gym.Env):
 
     def exit_scene(self):
         self.viewer.handler.send_exit_scene()
+
+    def jerk_penalty(self):
+        jerk_penalty = 0
+        if self.n_command_history > 1:
+            for i in range(self.n_command_history - 1):
+                steering = self.command_history[0, 2 * i]
+                prev_steering = self.command_history[0, 2 * (i + 1)]
+                steering_diff = (prev_steering - steering) / (MAX_STEERING - MIN_STEERING)
+
+                if abs(steering_diff) > MAX_STEERING_DIFF:
+                    jerk_penalty += JERK_REWARD_WEIGHT * (steering_diff ** 2)
+                else:
+                    jerk_penalty += 0
+        return jerk_penalty
+
+    def postprocessing_step(self, action, observation, reward, done, info):
+        # Update command history
+        if self.n_command_history > 0:
+            self.command_history = np.roll(self.command_history, shift=-self.n_commands, axis=-1)
+            self.command_history[..., -self.n_commands:] = action
+            observation = np.concatenate((observation, self.command_history), axis=-1)
+
+        reward -= self.jerk_penalty()
+
+        if self.n_stack > 1:
+            self.stacked_obs = np.roll(self.stacked_obs, shift=-observation.shape[-1], axis=-1)
+            if done:
+                self.stacked_obs[...] = 0
+            self.stacked_obs[..., -observation.shape[-1]:] = observation
+            return self.stacked_obs, reward, done, info
+
+
+        return observation, reward, done, info
+
 
     def step(self, action):
         """
@@ -123,13 +166,8 @@ class DonkeyVAEEnv(gym.Env):
             self.viewer.take_action(action, repeat_idx=repeat_idx)
             observation, reward, done, info = self.observe()
 
-        # Update command history
-        if self.n_command_history > 0:
-            self.command_history = np.roll(self.command_history, shift=-self.n_commands, axis=-1)
-            self.command_history[..., -self.n_commands:] = action
-            observation = np.concatenate((observation, self.command_history), axis=-1)
+        return self.postprocessing_step(action, observation, reward, done, info)
 
-        return observation, reward, done, info
 
     def reset(self):
         self.viewer.reset()
@@ -138,6 +176,12 @@ class DonkeyVAEEnv(gym.Env):
 
         if self.n_command_history > 0:
             observation = np.concatenate((observation, self.command_history), axis=-1)
+
+        if self.n_stack > 1:
+            self.stacked_obs[...] = 0
+            self.stacked_obs[..., -observation.shape[-1]:] = observation
+            return self.stacked_obs
+
         return observation
 
     def render(self, mode='human'):

@@ -111,7 +111,8 @@ if 'normalize' in hyperparams.keys():
 if not args.teleop:
     env = DummyVecEnv([make_env(args.seed, vae=vae, teleop=args.teleop)])
 else:
-    env = make_env(args.seed, vae=vae, teleop=args.teleop)()
+    env = make_env(args.seed, vae=vae, teleop=args.teleop,
+                   n_stack=hyperparams.get('frame_stack', 1))()
 
 if normalize:
     if hyperparams.get('normalize', False) and args.algo in ['ddpg']:
@@ -124,7 +125,8 @@ if normalize:
 n_stack = 1
 if hyperparams.get('frame_stack', False):
     n_stack = hyperparams['frame_stack']
-    env = VecFrameStack(env, n_stack)
+    if not args.teleop:
+        env = VecFrameStack(env, n_stack)
     print("Stacking {} frames".format(n_stack))
     del hyperparams['frame_stack']
 
