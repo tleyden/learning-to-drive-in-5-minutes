@@ -15,8 +15,9 @@ INPUT_DIM = (IMAGE_HEIGHT, IMAGE_WIDTH, N_CHANNELS)
 
 # Reward parameters
 THROTTLE_REWARD_WEIGHT = 0.5
-JERK_REWARD_WEIGHT = 0.0
-MAX_STEERING_DIFF = 0.0
+JERK_REWARD_WEIGHT = 2.0
+# 2.5% -> 0.05 diff
+MAX_STEERING_DIFF = 0.025
 
 # Symmetric command
 MAX_STEERING = 1
@@ -38,3 +39,10 @@ BASE_ENV = "DonkeyVae-v0"
 ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
 SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
               'MAX_CTE_ERROR', 'N_COMMAND_HISTORY']
+
+# DEBUG PARAMS
+# Show input and reconstruction in the teleop panel
+SHOW_IMAGES_TELEOP = False
+# Show steering plots
+SHOW_PLOTS = False
+N_HISTORY = 200

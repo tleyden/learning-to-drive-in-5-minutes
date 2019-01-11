@@ -8,8 +8,8 @@ DonkeyVae-v0:
   buffer_size: 10000
   batch_size: 64
   train_freq: 3000
-  ent_coef: 'auto_0.1'
-  # ent_coef: 0.05
+  # ent_coef: 'auto_0.1'
+  ent_coef: 0.1
   gradient_steps: 300
   learning_starts: 300
   # frame_stack: 3

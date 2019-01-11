@@ -118,13 +118,15 @@ class DonkeyVAEEnv(gym.Env):
     def jerk_penalty(self):
         jerk_penalty = 0
         if self.n_command_history > 1:
-            for i in range(self.n_command_history - 1):
-                steering = self.command_history[0, 2 * i]
-                prev_steering = self.command_history[0, 2 * (i + 1)]
+            # for i in range(self.n_command_history - 1):
+            for i in range(1):
+                steering = self.command_history[0, -2 * (i + 1)]
+                prev_steering = self.command_history[0, -2 * (i + 2)]
                 steering_diff = (prev_steering - steering) / (MAX_STEERING - MIN_STEERING)
 
                 if abs(steering_diff) > MAX_STEERING_DIFF:
-                    jerk_penalty += JERK_REWARD_WEIGHT * (steering_diff ** 2)
+                    # jerk_penalty += JERK_REWARD_WEIGHT * (steering_diff ** 2)
+                    jerk_penalty += JERK_REWARD_WEIGHT * abs(steering_diff)
                 else:
                     jerk_penalty += 0
         return jerk_penalty
