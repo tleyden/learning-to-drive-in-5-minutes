@@ -34,7 +34,7 @@ MAX_THROTTLE = 0.6
 N_COMMAND_HISTORY = 10
 # Action repeat
 FRAME_SKIP = 1
-Z_SIZE = 512 # Only used for random features
+Z_SIZE = 512  # Only used for random features
 # No frame skip during testing
 # it allows smoother control
 TEST_FRAME_SKIP = 1
@@ -48,6 +48,3 @@ SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
 # DEBUG PARAMS
 # Show input and reconstruction in the teleop panel
 SHOW_IMAGES_TELEOP = False
-# Show steering plots
-SHOW_PLOTS = False
-N_HISTORY = 200

@@ -1,14 +1,14 @@
 # Original author: Roma Sokolkov
 # Edited by Antonin Raffin
 import os
+import warnings
 
 import gym
 import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from config import INPUT_DIM, MIN_STEERING, MAX_STEERING, JERK_REWARD_WEIGHT, MAX_STEERING_DIFF,\
- MAX_THROTTLE
+from config import INPUT_DIM, MIN_STEERING, MAX_STEERING, JERK_REWARD_WEIGHT, MAX_STEERING_DIFF
 from donkey_gym.core.donkey_proc import DonkeyUnityProcess
 from .donkey_sim import DonkeyUnitySimContoller
 
@@ -155,9 +155,7 @@ class DonkeyVAEEnv(gym.Env):
             self.stacked_obs[..., -observation.shape[-1]:] = observation
             return self.stacked_obs, reward, done, info
 
-
         return observation, reward, done, info
-
 
     def step(self, action):
         """
@@ -183,7 +181,6 @@ class DonkeyVAEEnv(gym.Env):
             observation, reward, done, info = self.observe()
 
         return self.postprocessing_step(action, observation, reward, done, info)
-
 
     def reset(self):
         self.viewer.reset()
@@ -228,7 +225,6 @@ class DonkeyVAEEnv(gym.Env):
 
     def set_vae(self, vae):
         self.vae = vae
-
 
 # class GeneratedRoadsEnv(DonkeyVAEEnv):
 #

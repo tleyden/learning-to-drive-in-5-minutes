@@ -8,21 +8,15 @@ from threading import Event, Thread
 import numpy as np
 import pygame
 from pygame.locals import *
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import seaborn as sns
 from stable_baselines.bench import Monitor
 from stable_baselines.common.vec_env import VecFrameStack, VecNormalize, DummyVecEnv
 
 from config import MIN_STEERING, MAX_STEERING, MIN_THROTTLE, MAX_THROTTLE, \
-    LEVEL, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID, FRAME_SKIP,\
-    SHOW_IMAGES_TELEOP, SHOW_PLOTS, N_HISTORY
+    LEVEL, N_COMMAND_HISTORY, TEST_FRAME_SKIP, ENV_ID, FRAME_SKIP, \
+    SHOW_IMAGES_TELEOP
 from donkey_gym.envs.vae_env import DonkeyVAEEnv
 from utils.utils import ALGOS, get_latest_run_id, load_vae
 from .recorder import Recorder
-
-sns.set()
 
 UP = (1, 0)
 LEFT = (0, 1)
@@ -56,6 +50,7 @@ FONT = pygame.font.SysFont('Open Sans', 25)
 SMALL_FONT = pygame.font.SysFont('Open Sans', 20)
 KEY_MIN_DELAY = 0.4
 MAX_N_OUT_OF_BOUND = FRAME_SKIP
+
 
 def control(x, theta, control_throttle, control_steering):
     """
@@ -115,24 +110,6 @@ class TeleopEnv(object):
         self.current_image = None
         self.image_surface = None
         self.decoded_surface = None
-        if SHOW_PLOTS:
-            self.steering_history = np.zeros(N_HISTORY)
-            self.dsteering_history = np.zeros(N_HISTORY)
-            self.ddsteering_history = np.zeros(N_HISTORY)
-            # 100 dots per inch
-            # so the resulting buffer is 400x900 pixels
-            # self.fig, (self.ax, self.ax2, self.ax3) = plt.subplots(3, sharex=True, figsize=[4, 9], dpi=100)
-            self.fig, (self.ax, self.ax2) = plt.subplots(2, sharex=True, figsize=[4, 6], dpi=100)
-            self.x_steering = np.arange(N_HISTORY)
-            self.plot, = self.ax.plot(self.x_steering, self.steering_history)
-            self.dplot, = self.ax2.plot(self.x_steering, self.dsteering_history)
-            # self.ddplot, = self.ax3.plot(self.x_steering, self.ddsteering_history)
-            self.ax.set_xlim([0, 200])
-            self.ax.set_title("Steering")
-            self.ax2.set_title("dSteering - Steering Speed")
-            # self.ax3.set_title("ddSteering - Steering Acceleration")
-            self.fig.canvas.draw()
-            plt.tight_layout()
 
         self.start_process()
 
@@ -187,10 +164,7 @@ class TeleopEnv(object):
         # Pygame require a window
         pygame.init()
 
-        if SHOW_PLOTS:
-            self.window = pygame.display.set_mode((1000, 1000), RESIZABLE)
-        else:
-            self.window = pygame.display.set_mode((800, 500), RESIZABLE)
+        self.window = pygame.display.set_mode((800, 500), RESIZABLE)
 
         end = False
 
@@ -265,9 +239,9 @@ class TeleopEnv(object):
 
             if keys[K_o]:
                 if (self.is_manual
-                    and self.model is not None
-                    and hasattr(self.model, 'optimize')
-                    and (time.time() - last_time_pressed['o']) > KEY_MIN_DELAY):
+                        and self.model is not None
+                        and hasattr(self.model, 'optimize')
+                        and (time.time() - last_time_pressed['o']) > KEY_MIN_DELAY):
                     print("Optimizing")
                     self.model.optimize(len(self.model.replay_buffer), None, self.model.learning_rate(1))
                     last_time_pressed['o'] = time.time()
@@ -314,9 +288,6 @@ class TeleopEnv(object):
 
             self.update_screen(self.action)
 
-            if SHOW_PLOTS:
-                self.plot_steering()
-
             for event in pygame.event.get():
                 if event.type == QUIT or event.type == KEYDOWN and event.key in [K_ESCAPE, K_q]:
                     end = True
@@ -333,32 +304,6 @@ class TeleopEnv(object):
 
     def clear(self):
         self.window.fill((0, 0, 0))
-
-    def plot_steering(self):
-        if len(self.donkey_env.command_history) > 0:
-            last_steering = self.steering_history[-1]
-            last_dsteering = self.dsteering_history[-1]
-            self.steering_history = np.roll(self.steering_history, shift=-1, axis=-1)
-            self.dsteering_history = np.roll(self.dsteering_history, shift=-1, axis=-1)
-            # self.ddsteering_history = np.roll(self.ddsteering_history, shift=-1, axis=-1)
-            self.steering_history[-1:] = self.donkey_env.command_history[0, -2]
-            self.dsteering_history[-1:] = self.steering_history[-1] - last_steering
-            # self.ddsteering_history[-1:] = self.dsteering_history[-1] - last_dsteering
-            self.plot.set_ydata(self.steering_history)
-            self.dplot.set_ydata(self.dsteering_history)
-            # self.ddplot.set_ydata(self.ddsteering_history)
-            self.ax.relim()
-            self.ax.autoscale_view()
-            self.ax2.relim()
-            self.ax2.autoscale_view()
-            # self.ax3.relim()
-            # self.ax3.autoscale_view()
-            self.fig.canvas.draw()
-            raw_data = self.fig.canvas.get_renderer().tostring_rgb()
-            size = self.fig.canvas.get_width_height()
-
-            surf = pygame.image.fromstring(raw_data, size, "RGB")
-            self.window.blit(surf, (550, 0))
 
     def update_screen(self, action):
         self.clear()
@@ -401,14 +346,14 @@ class TeleopEnv(object):
         if self.current_image is not None and SHOW_IMAGES_TELEOP:
             current_image = np.swapaxes(self.current_image, 0, 1)
             if self.image_surface is None:
-                 self.image_surface = pygame.pixelcopy.make_surface(current_image)
+                self.image_surface = pygame.pixelcopy.make_surface(current_image)
             pygame.pixelcopy.array_to_surface(self.image_surface, current_image)
             self.window.blit(self.image_surface, (20, 350))
 
         if (self.donkey_env is not None
-            and self.donkey_env.vae is not None
-            and self.current_obs is not None
-            and SHOW_IMAGES_TELEOP):
+                and self.donkey_env.vae is not None
+                and self.current_obs is not None
+                and SHOW_IMAGES_TELEOP):
             vae_dim = self.donkey_env.vae.z_size
             encoded = self.current_obs[:, :vae_dim]
             reconstructed_image = self.donkey_env.vae.decode(encoded)[0]
@@ -416,9 +361,10 @@ class TeleopEnv(object):
             reconstructed_image = reconstructed_image[:, :, ::-1]
             reconstructed_image = np.swapaxes(reconstructed_image, 0, 1)
             if self.decoded_surface is None:
-                 self.decoded_surface = pygame.pixelcopy.make_surface(reconstructed_image)
+                self.decoded_surface = pygame.pixelcopy.make_surface(reconstructed_image)
             pygame.pixelcopy.array_to_surface(self.decoded_surface, reconstructed_image)
             self.window.blit(self.decoded_surface, (220, 350))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

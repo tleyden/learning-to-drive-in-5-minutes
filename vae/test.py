@@ -8,7 +8,6 @@ import cv2
 import numpy as np
 from stable_baselines.common import set_global_seeds
 
-from config import ROI
 from vae.controller import VAEController
 
 parser = argparse.ArgumentParser()

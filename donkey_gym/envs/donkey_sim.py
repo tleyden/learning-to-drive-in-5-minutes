@@ -7,22 +7,20 @@ import time
 from io import BytesIO
 from threading import Thread
 
-import cv2
 import numpy as np
 from PIL import Image
 
+from config import INPUT_DIM, ROI, THROTTLE_REWARD_WEIGHT, MAX_THROTTLE, MIN_THROTTLE, \
+    REWARD_CRASH, CRASH_SPEED_WEIGHT
 from donkey_gym.core.fps import FPSTimer
 from donkey_gym.core.tcp_server import IMesgHandler, SimServer
-from config import INPUT_DIM, IMAGE_WIDTH, IMAGE_HEIGHT, ROI, THROTTLE_REWARD_WEIGHT,\
-    MAX_THROTTLE, JERK_REWARD_WEIGHT, MIN_STEERING, MAX_STEERING, MAX_STEERING_DIFF, MIN_THROTTLE\
-    REWARD_CRASH, CRASH_SPEED_WEIGHT
-
 
 
 class DonkeyUnitySimContoller:
     """
     Wrapper for communicating with unity simulation
     """
+
     def __init__(self, level, port=9090, max_cte_error=3.0):
         self.level = level
         self.verbose = False
@@ -94,7 +92,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.x = 0.0
         self.y = 0.0
         self.z = 0.0
-        self.steering_angle  = 0.0
+        self.steering_angle = 0.0
         self.current_step = 0
         self.speed = 0
         self.steering = None
