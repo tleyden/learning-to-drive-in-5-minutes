@@ -14,7 +14,8 @@ from PIL import Image
 from donkey_gym.core.fps import FPSTimer
 from donkey_gym.core.tcp_server import IMesgHandler, SimServer
 from config import INPUT_DIM, IMAGE_WIDTH, IMAGE_HEIGHT, ROI, THROTTLE_REWARD_WEIGHT,\
-    MAX_THROTTLE, JERK_REWARD_WEIGHT, MIN_STEERING, MAX_STEERING, MAX_STEERING_DIFF, MIN_THROTTLE
+    MAX_THROTTLE, JERK_REWARD_WEIGHT, MIN_STEERING, MAX_STEERING, MAX_STEERING_DIFF, MIN_THROTTLE\
+    REWARD_CRASH, CRASH_SPEED_WEIGHT
 
 
 
@@ -180,9 +181,9 @@ class DonkeyUnitySimHandler(IMesgHandler):
     # add extra penalization for high throttle
     def calc_reward(self, done):
         if done:
-            # Number
+            # penalize the agent for getting off the road fast
             norm_throttle = (self.last_throttle - MIN_THROTTLE) / (MAX_THROTTLE - MIN_THROTTLE)
-            return -1 - norm_throttle
+            return REWARD_CRASH - CRASH_SPEED_WEIGHT * norm_throttle
         # 1 per timesteps + velocity - jerk_penalty
         throttle_reward = THROTTLE_REWARD_WEIGHT * (self.last_throttle / MAX_THROTTLE)
 

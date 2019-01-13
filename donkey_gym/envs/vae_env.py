@@ -7,7 +7,8 @@ import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from config import INPUT_DIM, MIN_STEERING, MAX_STEERING, JERK_REWARD_WEIGHT, MAX_STEERING_DIFF
+from config import INPUT_DIM, MIN_STEERING, MAX_STEERING, JERK_REWARD_WEIGHT, MAX_STEERING_DIFF,\
+ MAX_THROTTLE
 from donkey_gym.core.donkey_proc import DonkeyUnityProcess
 from .donkey_sim import DonkeyUnitySimContoller
 
@@ -84,7 +85,9 @@ class DonkeyVAEEnv(gym.Env):
                                            high=np.array([MAX_STEERING, 1]), dtype=np.float32)
 
         if vae is None:
-            assert n_command_history == 0, 'n_command_history not supported for images'
+            if n_command_history > 0:
+                warnings.warn("n_command_history not supported for images"
+                              "(it will not be concatenated with the input)")
             self.observation_space = spaces.Box(low=0, high=255,
                                                 shape=INPUT_DIM, dtype=np.uint8)
             # # camera sensor data
@@ -96,6 +99,7 @@ class DonkeyVAEEnv(gym.Env):
                                                 shape=(1, self.z_size + self.n_commands * n_command_history),
                                                 dtype=np.float32)
 
+        # Frame-stacking with teleoperation
         if n_stack > 1:
             obs_space = self.observation_space
             low = np.repeat(obs_space.low, self.n_stack, axis=-1)
@@ -118,15 +122,15 @@ class DonkeyVAEEnv(gym.Env):
     def jerk_penalty(self):
         jerk_penalty = 0
         if self.n_command_history > 1:
-            # for i in range(self.n_command_history - 1):
+            # Take only last command into account
             for i in range(1):
                 steering = self.command_history[0, -2 * (i + 1)]
                 prev_steering = self.command_history[0, -2 * (i + 2)]
                 steering_diff = (prev_steering - steering) / (MAX_STEERING - MIN_STEERING)
 
                 if abs(steering_diff) > MAX_STEERING_DIFF:
-                    # jerk_penalty += JERK_REWARD_WEIGHT * (steering_diff ** 2)
-                    jerk_penalty += JERK_REWARD_WEIGHT * abs(steering_diff)
+                    error = abs(steering_diff) - MAX_STEERING_DIFF
+                    jerk_penalty += JERK_REWARD_WEIGHT * (error ** 2)
                 else:
                     jerk_penalty += 0
         return jerk_penalty
@@ -138,7 +142,11 @@ class DonkeyVAEEnv(gym.Env):
             self.command_history[..., -self.n_commands:] = action
             observation = np.concatenate((observation, self.command_history), axis=-1)
 
-        reward -= self.jerk_penalty()
+        jerk_penalty = self.jerk_penalty()
+        # Cancel reward if the continuity constrain is violated
+        if jerk_penalty > 0 and reward > 0:
+            reward = 0
+        reward -= jerk_penalty
 
         if self.n_stack > 1:
             self.stacked_obs = np.roll(self.stacked_obs, shift=-observation.shape[-1], axis=-1)
@@ -163,6 +171,12 @@ class DonkeyVAEEnv(gym.Env):
             t = (action[1] + 1) / 2
             # Convert from [0, 1] to [min, max]
             action[1] = (1 - t) * self.min_throttle + self.max_throttle * t
+
+        # Clip diff in action to enforce continuity
+        prev_steering = self.command_history[0, -2]
+        max_diff = (MAX_STEERING_DIFF - 1e-5) * (MAX_STEERING - MIN_STEERING)
+        diff = np.clip(action[0] - prev_steering, -max_diff, max_diff)
+        action[0] = prev_steering + diff
 
         for repeat_idx in range(self.frame_skip):
             self.viewer.take_action(action, repeat_idx=repeat_idx)

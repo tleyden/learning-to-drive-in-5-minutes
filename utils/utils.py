@@ -47,6 +47,12 @@ class CustomSACPolicy(SACPolicy):
                                               layers=[256, 256],
                                               feature_extraction="mlp")
 
+class TinySACPolicy(SACPolicy):
+    def __init__(self, *args, **kwargs):
+        super(TinySACPolicy, self).__init__(*args, **kwargs,
+                                              layers=[32, 16],
+                                              feature_extraction="mlp")
+
 
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
@@ -58,6 +64,7 @@ class CustomDDPGPolicy(DDPGPolicy):
 
 register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
 register_policy('CustomSACPolicy', CustomSACPolicy)
+register_policy('TinySACPolicy', TinySACPolicy)
 register_policy('CustomMlpPolicy', CustomMlpPolicy)
 
 

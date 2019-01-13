@@ -14,10 +14,15 @@ N_CHANNELS = 3
 INPUT_DIM = (IMAGE_HEIGHT, IMAGE_WIDTH, N_CHANNELS)
 
 # Reward parameters
-THROTTLE_REWARD_WEIGHT = 0.5
-JERK_REWARD_WEIGHT = 2.0
-# 2.5% -> 0.05 diff
-MAX_STEERING_DIFF = 0.025
+THROTTLE_REWARD_WEIGHT = 0.1
+JERK_REWARD_WEIGHT = 0.0
+
+# 10% -> 0.2 diff in steering allowed
+MAX_STEERING_DIFF = 0.1
+# Negative reward for getting off the road
+REWARD_CRASH = -10
+# Penalize the agent even more when being fast
+CRASH_SPEED_WEIGHT = 5
 
 # Symmetric command
 MAX_STEERING = 1
@@ -33,7 +38,7 @@ Z_SIZE = 512 # Only used for random features
 # No frame skip during testing
 # it allows smoother control
 TEST_FRAME_SKIP = 1
-MAX_CTE_ERROR = 10.0
+MAX_CTE_ERROR = 2.0
 LEVEL = 0
 BASE_ENV = "DonkeyVae-v0"
 ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
