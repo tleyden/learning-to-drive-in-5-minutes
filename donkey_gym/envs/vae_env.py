@@ -171,10 +171,11 @@ class DonkeyVAEEnv(gym.Env):
             action[1] = (1 - t) * self.min_throttle + self.max_throttle * t
 
         # Clip diff in action to enforce continuity
-        prev_steering = self.command_history[0, -2]
-        max_diff = (MAX_STEERING_DIFF - 1e-5) * (MAX_STEERING - MIN_STEERING)
-        diff = np.clip(action[0] - prev_steering, -max_diff, max_diff)
-        action[0] = prev_steering + diff
+        if self.n_command_history > 0:
+            prev_steering = self.command_history[0, -2]
+            max_diff = (MAX_STEERING_DIFF - 1e-5) * (MAX_STEERING - MIN_STEERING)
+            diff = np.clip(action[0] - prev_steering, -max_diff, max_diff)
+            action[0] = prev_steering + diff
 
         for repeat_idx in range(self.frame_skip):
             self.viewer.take_action(action, repeat_idx=repeat_idx)

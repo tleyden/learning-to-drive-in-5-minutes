@@ -6,6 +6,7 @@ import os
 import time
 
 import yaml
+import tensorflow as tf
 from stable_baselines import logger
 from stable_baselines.bench import Monitor
 from stable_baselines.common import set_global_seeds
@@ -41,9 +42,9 @@ class CustomMlpPolicy(BasePolicy):
                                               feature_extraction="mlp")
 
 
-class CustomSACPolicy(SACPolicy):
+class LargeSACPolicy(SACPolicy):
     def __init__(self, *args, **kwargs):
-        super(CustomSACPolicy, self).__init__(*args, **kwargs,
+        super(LargeSACPolicy, self).__init__(*args, **kwargs,
                                               layers=[256, 256],
                                               feature_extraction="mlp")
 
@@ -53,6 +54,12 @@ class TinySACPolicy(SACPolicy):
                                               layers=[32, 16],
                                               feature_extraction="mlp")
 
+class CustomSACPolicy(SACPolicy):
+    def __init__(self, *args, **kwargs):
+        super(CustomSACPolicy, self).__init__(*args, **kwargs,
+                                              layers=[32, 16, 8],
+                                              act_fun=tf.nn.elu,
+                                              feature_extraction="mlp")
 
 class CustomDDPGPolicy(DDPGPolicy):
     def __init__(self, *args, **kwargs):
@@ -63,8 +70,9 @@ class CustomDDPGPolicy(DDPGPolicy):
 
 
 register_policy('CustomDDPGPolicy', CustomDDPGPolicy)
-register_policy('CustomSACPolicy', CustomSACPolicy)
+register_policy('LargeSACPolicy', LargeSACPolicy)
 register_policy('TinySACPolicy', TinySACPolicy)
+register_policy('CustomSACPolicy', CustomSACPolicy)
 register_policy('CustomMlpPolicy', CustomMlpPolicy)
 
 
