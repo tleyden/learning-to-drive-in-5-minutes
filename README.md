@@ -1,13 +1,15 @@
-# Learning to Drive in 5 Minutes
+# Learning to Drive Smoothly in 5 Minutes
 
 Using Soft Actor-Critic (SAC) and a Variational AutoEncoder (VAE).
 
 
-![result](content/example-after-3000-steps.gif)
+![result](content/smooth.gif)
 
-Video with [real RC car](https://www.youtube.com/watch?v=6JUjDw9tfD4).
 
 Code that implements approach similar to described in ["Learning to Drive in a Day"](https://arxiv.org/pdf/1807.00412.pdf) paper.
+
+
+Video with [real RC car](https://www.youtube.com/watch?v=6JUjDw9tfD4).
 
 
 # Quick start

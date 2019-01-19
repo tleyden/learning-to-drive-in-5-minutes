@@ -60,14 +60,14 @@ class VAEController:
         return self.encode(im)
 
     def encode(self, observation):
-        assert observation.shape == self.input_dimension
+        assert observation.shape == self.input_dimension, "{} != {}".format(observation.shape, self.input_dimension)
         # Normalize
         observation = preprocess_input(observation.astype(np.float32),
                                        mode=self.normalization_mode)[None]
         return self.target_vae.encode(observation)
 
     def decode(self, arr):
-        assert arr.shape == (1, self.z_size), print(arr.shape, (1, self.z_size))
+        assert arr.shape == (1, self.z_size), "{} != {}".format(arr.shape, (1, self.z_size))
         # Decode
         arr = self.target_vae.decode(arr)
         # Denormalize

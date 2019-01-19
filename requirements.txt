@@ -4,7 +4,7 @@ numpy
 # tensorflow==1.10.1
 pillow
 gym
--e git+https://github.com/hill-a/stable-baselines.git@f2890e0b02929de05e33d185f71602bf9ec4fcf9#egg=stable_baselines
+stable-baselines>=2.4.0
 pytablewriter
 # -e git+git@github.com:tawnkramer/donkey.git@faa4a32b2aff452c6b46474029ea9e4b3168843d#egg=donkeycar
 opencv-python
