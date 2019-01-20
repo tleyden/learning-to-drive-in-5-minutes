@@ -149,6 +149,8 @@ class TeleopEnv(object):
             self.need_reset = False
             return self.env.reset()
         else:
+            # Zero speed, neutral angle
+            self.donkey_env.viewer.take_action([0, 0])
             return self.current_obs
 
     def wait_for_teleop_reset(self):

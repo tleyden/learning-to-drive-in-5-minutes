@@ -18,7 +18,7 @@ THROTTLE_REWARD_WEIGHT = 0.1
 JERK_REWARD_WEIGHT = 0.0
 
 # 10% -> 0.2 diff in steering allowed
-MAX_STEERING_DIFF = 0.2
+MAX_STEERING_DIFF = 0.15
 # Negative reward for getting off the road
 REWARD_CRASH = -10
 # Penalize the agent even more when being fast
@@ -30,7 +30,7 @@ MIN_STEERING = - MAX_STEERING
 
 # Simulation config
 MIN_THROTTLE = 0.4
-MAX_THROTTLE = 0.6
+MAX_THROTTLE = 0.5
 N_COMMAND_HISTORY = 10
 # Action repeat
 FRAME_SKIP = 1
@@ -39,7 +39,7 @@ Z_SIZE = 512  # Only used for random features
 # it allows smoother control
 TEST_FRAME_SKIP = 1
 MAX_CTE_ERROR = 10.0
-LEVEL = 1
+LEVEL = 0
 BASE_ENV = "DonkeyVae-v0"
 ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
 SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',

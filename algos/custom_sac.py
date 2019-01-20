@@ -120,8 +120,8 @@ class SACWithVAE(SAC):
 
                 if ep_len > self.train_freq:
                     print("Additional training")
-                    mb_infos_vals = self.optimize(step, writer, current_lr)
                     self.env.reset()
+                    mb_infos_vals = self.optimize(step, writer, current_lr)
                     done = True
 
                 episode_rewards[-1] += reward

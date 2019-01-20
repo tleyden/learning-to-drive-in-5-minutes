@@ -1,4 +1,4 @@
-# Learning to Drive Smoothly in 5 Minutes
+# Learning to Drive Smoothly in Minutes
 
 Using Soft Actor-Critic (SAC) and a Variational AutoEncoder (VAE).
 

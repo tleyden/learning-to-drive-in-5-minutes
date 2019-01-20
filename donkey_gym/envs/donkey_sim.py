@@ -19,6 +19,9 @@ from donkey_gym.core.tcp_server import IMesgHandler, SimServer
 class DonkeyUnitySimContoller:
     """
     Wrapper for communicating with unity simulation
+    :param level: (int) Level index
+    :param port: (int) Port to use for communicating with the simulator
+    :param max_cte_error: (float) Max cross track error before reset
     """
 
     def __init__(self, level, port=9090, max_cte_error=3.0):
@@ -31,6 +34,7 @@ class DonkeyUnitySimContoller:
 
         self.address = ('0.0.0.0', port)
 
+        # Socket message handler
         self.handler = DonkeyUnitySimHandler(level, max_cte_error=max_cte_error)
         self.server = SimServer(self.address, self.handler)
 
@@ -72,6 +76,13 @@ class DonkeyUnitySimContoller:
 
 
 class DonkeyUnitySimHandler(IMesgHandler):
+    """
+    Socket message handler.
+
+    :param level: (int) Level ID
+    :param max_cte_error: (float) Max cross track error before reset
+    """
+
     def __init__(self, level, max_cte_error=3.0):
         self.level_idx = level
         self.wait_time_for_obs = 0.1
@@ -98,19 +109,32 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.steering = None
         self.prev_steering = None
 
+        # Define which method should be called
+        # for each type of message
         self.fns = {'telemetry': self.on_telemetry,
                     "scene_selection_ready": self.on_scene_selection_ready,
                     "scene_names": self.on_recv_scene_names,
                     "car_loaded": self.on_car_loaded}
 
     def on_connect(self, socket_handler):
+        """
+        :param socket_handler: (socket object)
+        """
         self.sock = socket_handler
 
     def on_disconnect(self):
+        """
+        Close socket
+        """
         self.sock.close()
         self.sock = None
 
     def on_recv_message(self, message):
+        """
+        Distribute the received message
+        to the appropriate function.
+        :param message: (dict)
+        """
         if 'msg_type' not in message:
             print('Expected msg_type field')
             return
@@ -121,9 +145,11 @@ class DonkeyUnitySimHandler(IMesgHandler):
         else:
             print('Unknown message type', msg_type)
 
-    # ------- Env interface ---------- #
-
     def reset(self):
+        """
+        Global reset, notably it
+        resets car to initial position.
+        """
         if self.verbose:
             print("reseting")
         self.image_array = np.zeros(self.camera_img_size)
@@ -140,9 +166,16 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.timer.reset()
 
     def get_sensor_size(self):
+        """
+        :return: (tuple)
+        """
         return self.camera_img_size
 
     def take_action(self, action, repeat_idx=0):
+        """
+        :param action: ([float]) Steering and throttle
+        :param repeat_idx: (int) Number of time to repeat the same action
+        """
         if self.verbose:
             print("take_action")
 
@@ -171,25 +204,34 @@ class DonkeyUnitySimHandler(IMesgHandler):
         return observation, reward, done, info
 
     def is_game_over(self):
+        """
+        :return: (bool)
+        """
         return self.hit != "none" or math.fabs(self.cte) > self.max_cte_error
 
-    # Use throttle as reward for every step
-    # + life bonus
-    # except when episode done (failed)
-    # add extra penalization for high throttle
     def calc_reward(self, done):
+        """
+        Compute reward:
+        - +1 life bonus for each step + throttle bonus
+        - -10 crash penalty - penalty for large throttle during a crash
+        :param done: (bool)
+        :return: (float)
+        """
         if done:
             # penalize the agent for getting off the road fast
             norm_throttle = (self.last_throttle - MIN_THROTTLE) / (MAX_THROTTLE - MIN_THROTTLE)
             return REWARD_CRASH - CRASH_SPEED_WEIGHT * norm_throttle
-        # 1 per timesteps + velocity - jerk_penalty
+        # 1 per timesteps + throttle
         throttle_reward = THROTTLE_REWARD_WEIGHT * (self.last_throttle / MAX_THROTTLE)
-
         return 1 + throttle_reward
 
     # ------ Socket interface ----------- #
 
     def on_telemetry(self, data):
+        """
+        Update car info when receiving telemetry message.
+        :param data: (dict)
+        """
         img_string = data["image"]
         image = Image.open(BytesIO(base64.b64decode(img_string)))
         # Resize and crop image
@@ -229,6 +271,9 @@ class DonkeyUnitySimHandler(IMesgHandler):
             pass
 
     def on_scene_selection_ready(self, _data):
+        """
+        Get the level names when the scene selection screen is ready
+        """
         print("Scene Selection Ready")
         self.send_get_scene_names()
 
@@ -238,35 +283,63 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.loaded = True
 
     def on_recv_scene_names(self, data):
-        if data:
+        """
+        Select the level.
+
+        :param data: (dict)
+        """
+        if data is not None:
             names = data['scene_names']
             if self.verbose:
                 print("SceneNames:", names)
             self.send_load_scene(names[self.level_idx])
 
     def send_control(self, steer, throttle):
+        """
+        Send message to the server for controlling the car.
+        :param steer: (float)
+        :param throttle: (float)
+        """
         if not self.loaded:
             return
         msg = {'msg_type': 'control', 'steering': steer.__str__(), 'throttle': throttle.__str__(), 'brake': '0.0'}
         self.queue_message(msg)
 
     def send_reset_car(self):
+        """
+        Reset car to initial position.
+        """
         msg = {'msg_type': 'reset_car'}
         self.queue_message(msg)
 
     def send_get_scene_names(self):
+        """
+        Get the different levels availables
+        """
         msg = {'msg_type': 'get_scene_names'}
         self.queue_message(msg)
 
     def send_load_scene(self, scene_name):
+        """
+        Load a level.
+        :param scene_name: (str)
+        """
         msg = {'msg_type': 'load_scene', 'scene_name': scene_name}
         self.queue_message(msg)
 
     def send_exit_scene(self):
+        """
+        Go back to scene selection.
+        """
         msg = {'msg_type': 'exit_scene'}
         self.queue_message(msg)
 
     def queue_message(self, msg):
+        """
+        Add message to socket queue.
+
+        :param msg: (dict)
+        """
         if self.sock is None:
             if self.verbose:
                 print('skipping:', msg)

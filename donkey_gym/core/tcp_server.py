@@ -45,10 +45,11 @@ class IMesgHandler(object):
 
 class SimServer(asyncore.dispatcher):
     """
-      Receives network connections and establishes handlers for each client.
-      Each client connection is handled by a new instance of the SteeringHandler class.
+    Receives network connections and establishes handlers for each client.
+    Each client connection is handled by a new instance of the SteeringHandler class.
+    :param address: (str, int) (address, port)
+    :param msg_handler: (socket message handler object)
     """
-
     def __init__(self, address, msg_handler):
         asyncore.dispatcher.__init__(self)
 
