@@ -6,9 +6,9 @@ Level-0          | Level-1
 :-------------------------:|:-------------------------:
 ![result](content/smooth.gif)  | ![result](content/level1.gif)
 [Download VAE](https://drive.google.com/open?id=1n7FosFA0hALhuESf1j1yg-hERCnfVc4b) |  [Download VAE](https://drive.google.com/open?id=1hfQNAvVp2QmbmTLklWt2MxtAjrlisr2B)
-[Download pretrained agent] | [Download pretrained agent](https://drive.google.com/open?id=1cSW1AoTgBoMtjCKCYCYJ4sJjYCeDeqhO)
+[Download pretrained agent](https://drive.google.com/open?id=10Hgd5BKfn1AmmVdLlNcDll6yXqVkujoq) | [Download pretrained agent](https://drive.google.com/open?id=104tlsIrtOTVxJ1ZLoTpBDzK4-DRTA5et)
 
-
+Note: the pretrained agents must be saved in `logs/sac/` folder (you need to pass `--exp-id 6` (index of the folder) to use the pretrained agent).
 
 
 # Quick Start
@@ -53,6 +53,12 @@ python train.py --algo sac -vae logs/vae.pkl -n 5000 --teleop
 
 ```
 python -m teleop.teleop_client --algo sac -vae logs/vae.pkl --exp-id 0
+```
+
+## Explore Latent Space
+
+```
+python -m vae.enjoy_latent -vae logs/level-0/vae-8.pkl
 ```
 
 Related Paper: ["Learning to Drive in a Day"](https://arxiv.org/pdf/1807.00412.pdf).
