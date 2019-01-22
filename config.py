@@ -17,8 +17,9 @@ INPUT_DIM = (IMAGE_HEIGHT, IMAGE_WIDTH, N_CHANNELS)
 THROTTLE_REWARD_WEIGHT = 0.1
 JERK_REWARD_WEIGHT = 0.0
 
-# 10% -> 0.2 diff in steering allowed
-MAX_STEERING_DIFF = 0.15
+# very smooth control: 10% -> 0.2 diff in steering allowed
+# smooth control: 15% -> 0.3 diff in steering allowed
+MAX_STEERING_DIFF = 0.1
 # Negative reward for getting off the road
 REWARD_CRASH = -10
 # Penalize the agent even more when being fast
@@ -30,18 +31,23 @@ MIN_STEERING = - MAX_STEERING
 
 # Simulation config
 MIN_THROTTLE = 0.4
-MAX_THROTTLE = 0.5
-N_COMMAND_HISTORY = 10
+# max_throttle: 0.6 for level 0 and 0.5 for level 1
+MAX_THROTTLE = 0.6
+# Number of past commands to concatenate with the input
+N_COMMAND_HISTORY = 20
+# Max cross track error (used in normal mode to reset the car)
+MAX_CTE_ERROR = 2.0
+# Level to use for training
+LEVEL = 0
+
 # Action repeat
 FRAME_SKIP = 1
 Z_SIZE = 512  # Only used for random features
-# No frame skip during testing
-# it allows smoother control
 TEST_FRAME_SKIP = 1
-MAX_CTE_ERROR = 10.0
-LEVEL = 0
+
 BASE_ENV = "DonkeyVae-v0"
 ENV_ID = "DonkeyVae-v0-level-{}".format(LEVEL)
+# Params that are logged
 SIM_PARAMS = ['MIN_THROTTLE', 'MAX_THROTTLE', 'FRAME_SKIP',
               'MAX_CTE_ERROR', 'N_COMMAND_HISTORY', 'MAX_STEERING_DIFF']
 

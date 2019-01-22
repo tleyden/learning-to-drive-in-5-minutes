@@ -29,7 +29,9 @@ def replace_float_notation(string):
 
 
 class IMesgHandler(object):
-
+    """
+    Abstract class that represent a socket message handler.
+    """
     def on_connect(self, socket_handler):
         pass
 
@@ -46,7 +48,8 @@ class IMesgHandler(object):
 class SimServer(asyncore.dispatcher):
     """
     Receives network connections and establishes handlers for each client.
-    Each client connection is handled by a new instance of the SteeringHandler class.
+    Each client connection is handled by a new instance of the SimHandler class.
+
     :param address: (str, int) (address, port)
     :param msg_handler: (socket message handler object)
     """
@@ -96,7 +99,11 @@ class SimServer(asyncore.dispatcher):
 
 class SimHandler(asyncore.dispatcher):
     """
-      Handles messages from a single TCP client.
+    Handles messages from a single TCP client.
+
+    :param sock: (socket object)
+    :param chunk_size: (int)
+    :param msg_handler: (socket message handler object)
     """
 
     def __init__(self, sock, chunk_size=(16 * 1024), msg_handler=None):
@@ -184,6 +191,7 @@ class SimHandler(asyncore.dispatcher):
     def handle_json_message(self, chunk):
         """
         We are expecing a json object
+        :param chunk: (str)
         """
         try:
             # convert data into a string with decode, and then load it as a json object

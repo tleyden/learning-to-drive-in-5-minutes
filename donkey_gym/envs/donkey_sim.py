@@ -18,7 +18,8 @@ from donkey_gym.core.tcp_server import IMesgHandler, SimServer
 
 class DonkeyUnitySimContoller:
     """
-    Wrapper for communicating with unity simulation
+    Wrapper for communicating with unity simulation.
+
     :param level: (int) Level index
     :param port: (int) Port to use for communicating with the simulator
     :param max_cte_error: (float) Max cross track error before reset
@@ -27,7 +28,6 @@ class DonkeyUnitySimContoller:
     def __init__(self, level, port=9090, max_cte_error=3.0):
         self.level = level
         self.verbose = False
-        self.wait_time_for_obs = 0.1
 
         # sensor size - height, width, depth
         self.camera_img_size = INPUT_DIM
@@ -36,8 +36,9 @@ class DonkeyUnitySimContoller:
 
         # Socket message handler
         self.handler = DonkeyUnitySimHandler(level, max_cte_error=max_cte_error)
+        # Create the server to which the unity sim will connect
         self.server = SimServer(self.address, self.handler)
-
+        # Start the Asynchronous socket handler thread
         self.thread = Thread(target=asyncore.loop)
         self.thread.daemon = True
         self.thread.start()
@@ -56,8 +57,8 @@ class DonkeyUnitySimContoller:
     def get_sensor_size(self):
         return self.handler.get_sensor_size()
 
-    def take_action(self, action, repeat_idx=0):
-        self.handler.take_action(action, repeat_idx)
+    def take_action(self, action):
+        self.handler.take_action(action)
 
     def observe(self):
         return self.handler.observe()
@@ -85,7 +86,6 @@ class DonkeyUnitySimHandler(IMesgHandler):
 
     def __init__(self, level, max_cte_error=3.0):
         self.level_idx = level
-        self.wait_time_for_obs = 0.1
         self.sock = None
         self.loaded = False
         self.verbose = False
@@ -107,7 +107,6 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.current_step = 0
         self.speed = 0
         self.steering = None
-        self.prev_steering = None
 
         # Define which method should be called
         # for each type of message
@@ -171,18 +170,14 @@ class DonkeyUnitySimHandler(IMesgHandler):
         """
         return self.camera_img_size
 
-    def take_action(self, action, repeat_idx=0):
+    def take_action(self, action):
         """
         :param action: ([float]) Steering and throttle
-        :param repeat_idx: (int) Number of time to repeat the same action
         """
         if self.verbose:
             print("take_action")
 
         throttle = action[1]
-        # Do not update prev_steering if using frame skip
-        if repeat_idx == 0:
-            self.prev_steering = self.steering
         self.steering = action[0]
         self.last_throttle = throttle
         self.current_step += 1
@@ -214,6 +209,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         Compute reward:
         - +1 life bonus for each step + throttle bonus
         - -10 crash penalty - penalty for large throttle during a crash
+
         :param done: (bool)
         :return: (float)
         """
@@ -267,7 +263,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
             self.cte = data["cte"]
             # print(self.cte)
         except KeyError:
-            print("No CTE")
+            print("No Cross Track Error in telemetry")
             pass
 
     def on_scene_selection_ready(self, _data):
@@ -297,6 +293,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
     def send_control(self, steer, throttle):
         """
         Send message to the server for controlling the car.
+
         :param steer: (float)
         :param throttle: (float)
         """
@@ -322,6 +319,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
     def send_load_scene(self, scene_name):
         """
         Load a level.
+
         :param scene_name: (str)
         """
         msg = {'msg_type': 'load_scene', 'scene_name': scene_name}

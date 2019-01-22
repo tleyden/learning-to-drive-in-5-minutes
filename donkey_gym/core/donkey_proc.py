@@ -6,13 +6,17 @@ import os
 
 class DonkeyUnityProcess(object):
     """
-    Utility class to start unity process if needed
+    Utility class to start unity process if needed.
     """
     def __init__(self):
         self.process = None
 
     def start(self, sim_path, headless=False, port=9090):
-
+        """
+        :param sim_path: (str) Path to the executable
+        :param headless: (bool)
+        :param port: (int)
+        """
         if not os.path.exists(sim_path):
             print(sim_path, "does not exist. not starting sim.")
             return

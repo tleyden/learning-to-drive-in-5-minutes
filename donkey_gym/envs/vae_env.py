@@ -177,8 +177,8 @@ class DonkeyVAEEnv(gym.Env):
             diff = np.clip(action[0] - prev_steering, -max_diff, max_diff)
             action[0] = prev_steering + diff
 
-        for repeat_idx in range(self.frame_skip):
-            self.viewer.take_action(action, repeat_idx=repeat_idx)
+        for _ in range(self.frame_skip):
+            self.viewer.take_action(action)
             observation, reward, done, info = self.observe()
 
         return self.postprocessing_step(action, observation, reward, done, info)
