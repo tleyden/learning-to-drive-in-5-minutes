@@ -11,7 +11,7 @@ Level-0          | Level-1
 Note: the pretrained agents must be saved in `logs/sac/` folder (you need to pass `--exp-id 6` (index of the folder) to use the pretrained agent).
 
 
-# Quick Start
+## Quick Start
 
 0. Download simulator [here](https://drive.google.com/open?id=1h2VfpGHlZetL5RAPZ79bhDRkvlfuB4Wb) or build it from [source](https://github.com/tawnkramer/sdsandbox/tree/donkey)
 1. Install dependencies (cf requirements.txt)
@@ -61,9 +61,60 @@ python -m teleop.teleop_client --algo sac -vae logs/vae.pkl --exp-id 0
 python -m vae.enjoy_latent -vae logs/level-0/vae-8.pkl
 ```
 
-Related Paper: ["Learning to Drive in a Day"](https://arxiv.org/pdf/1807.00412.pdf).
+## Reproducing Results
 
-# Credits
+To reproduce the results shown in the video, you have to check different values in `config.py`.
+
+### Level 0
+
+`config.py`:
+
+```python
+MAX_STEERING_DIFF = 0.15 # 0.1 for very smooth control, but it requires more steps
+MAX_THROTTLE = 0.6 # MAX_THROTTLE = 0.5 is fine, but we can go faster
+MAX_CTE_ERROR = 2.0 # only used in normal mode, set it to 10.0 when using teleoperation mode
+LEVEL = 0
+```
+
+Train in normal mode (smooth control), it takes ~5-10 minutes:
+```
+python train.py --algo sac -n 8000 -vae log/vae-level-0-dim-32.pkl
+```
+
+Train in normal mode (very smooth control with `MAX_STEERING_DIFF = 0.1`), it takes ~20 minutes:
+```
+python train.py --algo sac -n 20000 -vae log/vae-level-0-dim-32.pkl
+```
+
+Train in teleoperation mode (`MAX_CTE_ERROR = 10.0`), it takes ~5-10 minutes:
+```
+python train.py --algo sac -n 8000 -vae log/vae-level-0-dim-32.pkl --teleop
+```
+
+### Level 1
+
+Note: only teleoperation mode is available for level 1
+
+`config.py`:
+
+```python
+MAX_STEERING_DIFF = 0.15
+MAX_THROTTLE = 0.5 # MAX_THROTTLE = 0.6 can work but it's harder to train due to the sharpest turn
+LEVEL = 1
+```
+
+Train in teleoperation mode, it takes ~10 minutes:
+```
+python train.py --algo sac -n 15000 -vae log/vae-level-1-dim-64.pkl --teleop
+```
+
+Note: although the size of the VAE is different between level 0 and 1, this is not an important factor.
+
+
+
+## Credits
+
+Related Paper: ["Learning to Drive in a Day"](https://arxiv.org/pdf/1807.00412.pdf).
 
 - [r7vme](https://github.com/r7vme/learning-to-drive-in-a-day) Author of the original implementation
 - [Wayve.ai](https://wayve.ai) for idea and inspiration.
