@@ -17,9 +17,9 @@ INPUT_DIM = (IMAGE_HEIGHT, IMAGE_WIDTH, N_CHANNELS)
 THROTTLE_REWARD_WEIGHT = 0.1
 JERK_REWARD_WEIGHT = 0.0
 
-# very smooth control: 10% -> 0.2 diff in steering allowed
+# very smooth control: 10% -> 0.2 diff in steering allowed (requires more training)
 # smooth control: 15% -> 0.3 diff in steering allowed
-MAX_STEERING_DIFF = 0.1
+MAX_STEERING_DIFF = 0.15
 # Negative reward for getting off the road
 REWARD_CRASH = -10
 # Penalize the agent even more when being fast
