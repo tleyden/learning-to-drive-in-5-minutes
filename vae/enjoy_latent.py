@@ -10,7 +10,9 @@ from vae.controller import VAEController
 
 def create_figure_and_sliders(name, state_dim):
     """
-    Creating a window for the latent space visualization, an another for the slider to control it
+    Creating a window for the latent space visualization,
+    and another one for the sliders to control it.
+
     :param name: name of model (str)
     :param state_dim: (int)
     :return:

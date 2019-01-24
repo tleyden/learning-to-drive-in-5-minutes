@@ -12,9 +12,11 @@ from stable_baselines.ppo2.ppo2 import get_schedule_fn, safe_mean, swap_and_flat
 
 class PPO2WithVAE(PPO2):
     """
-    Custom PPO2 version
-    """
+    Custom PPO2 version.
 
+    Notable changes:
+        - optimization is done after each episode and not after n steps
+    """
     def learn(self, total_timesteps, callback=None, seed=None, log_interval=1, tb_log_name="PPO2"):
         # Transform to callable if needed
         self.learning_rate = get_schedule_fn(self.learning_rate)

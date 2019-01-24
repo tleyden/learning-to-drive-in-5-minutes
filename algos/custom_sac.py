@@ -22,7 +22,8 @@ class SACWithVAE(SAC):
     """
     def optimize(self, step, writer, current_lr):
         """
-        Do several optimization steps to update the different networks
+        Do several optimization steps to update the different networks.
+        
         :param step: (int) current timestep
         :param writer: (TensorboardWriter object)
         :param current_lr: (float) Current learning rate

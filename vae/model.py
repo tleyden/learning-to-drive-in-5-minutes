@@ -5,7 +5,6 @@
 # VAE model
 
 import os
-import json
 
 import cloudpickle
 import numpy as np
@@ -26,7 +25,9 @@ def conv_to_fc(input_tensor):
 
 class ConvVAE(object):
     """
-    :param z_size: (int)
+    VAE model.
+
+    :param z_size: (int) latent space dimension
     :param batch_size: (int)
     :param learning_rate: (float)
     :param kl_tolerance: (float)
@@ -132,9 +133,17 @@ class ConvVAE(object):
         self.sess.close()
 
     def encode(self, input_tensor):
+        """
+        :param input_tensor: (np.ndarray)
+        :return: (np.ndarray)
+        """
         return self.sess.run(self.z, feed_dict={self.input_tensor: input_tensor})
 
     def decode(self, z):
+        """
+        :param z: (np.ndarray)
+        :return: (np.ndarray)
+        """
         return self.sess.run(self.output_tensor, feed_dict={self.z: z})
 
     def get_model_params(self):
@@ -174,20 +183,7 @@ class ConvVAE(object):
                 self.sess.run(assign_op)
                 idx += 1
 
-    def load_json(self, jsonfile='vae.json'):
-        with open(jsonfile, 'r') as f:
-            params = json.load(f)
-        self.set_model_params(params)
-
-    def save_json(self, jsonfile='vae.json'):
-        model_params, model_shapes, model_names = self.get_model_params()
-        qparams = []
-        for p in model_params:
-            qparams.append(p)
-        with open(jsonfile, 'wt') as outfile:
-            json.dump(qparams, outfile, sort_keys=True, indent=0, separators=(',', ': '))
-
-    def save_model(self, model_save_path):
+    def save_checkpoint(self, model_save_path):
         sess = self.sess
         with self.graph.as_default():
             saver = tf.train.Saver(tf.global_variables())
@@ -218,6 +214,11 @@ class ConvVAE(object):
             cloudpickle.dump((data, params), save_path)
 
     def save(self, save_path):
+        """
+        Save to a pickle file.
+
+        :param save_path: (str)
+        """
         data = {
             "z_size": self.z_size,
             "batch_size": self.batch_size,

@@ -11,6 +11,8 @@ from .data_loader import denormalize, preprocess_input
 
 class VAEController:
     """
+    Wrapper to manipulate a VAE.
+
     :param z_size: (int) latent space dimension
     :param input_dimension: ((int, int, int)) input dimension
     :param learning_rate: (float)
@@ -80,12 +82,6 @@ class VAEController:
     def load(self, path):
         self.target_vae = ConvVAE.load(path)
         self.z_size = self.target_vae.z_size
-
-    def save_json(self, path):
-        self.target_vae.save_json(path)
-
-    def load_json(self, path):
-        self.target_vae.load_json(path)
 
     def set_target_params(self):
         params = self.vae.get_params()

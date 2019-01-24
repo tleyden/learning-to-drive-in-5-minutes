@@ -6,6 +6,7 @@ import argparse
 
 import gym
 import numpy as np
+from stable_baselines.common import set_global_seeds
 from stable_baselines.common.vec_env import VecVideoRecorder, VecFrameStack, VecNormalize
 
 from config import ENV_ID
@@ -26,6 +27,8 @@ parser.add_argument('--no-render', action='store_true', default=False,
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
 parser.add_argument('--exp-id', help='Experiment ID (-1: no exp folder, 0: latest)', default=0,
                     type=int)
+parser.add_argument('-best', '--best-model', action='store_true', default=False,
+                    help='Use best saved model of that experiment (if it exists)')
 args = parser.parse_args()
 
 algo = args.algo
@@ -45,8 +48,16 @@ if args.exp_id > 0:
 else:
     log_path = os.path.join(folder, algo)
 
+best_path = ''
+if args.best_model:
+    best_path = '_best'
 
-model_path = "{}/{}.pkl".format(log_path, ENV_ID)
+model_path = os.path.join(log_path, "{}{}.pkl".format(ENV_ID, best_path))
+
+assert os.path.isdir(log_path), "The {} folder was not found".format(log_path)
+assert os.path.isfile(model_path), "No model found for {} on {}, path: {}".format(algo, ENV_ID, model_path)
+
+set_global_seeds(args.seed)
 
 stats_path = os.path.join(log_path, ENV_ID)
 hyperparams, stats_path = get_saved_hyperparams(stats_path)
@@ -74,7 +85,7 @@ for _ in range(video_length + 1):
 
 # Reset car
 env.reset()
-env.envs[0].env.exit_scene()
+env.env.envs[0].env.exit_scene()
 
 # Workaround for https://github.com/openai/gym/issues/893
 env = env.venv

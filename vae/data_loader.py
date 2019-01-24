@@ -13,9 +13,11 @@ from config import IMAGE_WIDTH, IMAGE_HEIGHT, ROI
 
 def preprocess_input(x, mode="rl"):
     """
-    Normalize input
+    Normalize input.
+
     :param x: (np.ndarray) (RGB image with values between [0, 255])
     :param mode: (str) One of "image_net", "tf" or "rl".
+        - rl: divide by 255 only (rescale to [0, 1])
         - image_net: will zero-center each color channel with
             respect to the ImageNet dataset,
             with scaling.
@@ -49,7 +51,8 @@ def preprocess_input(x, mode="rl"):
 
 def denormalize(x, mode="rl"):
     """
-    de normalize data (transform input to [0, 1])
+    De normalize data (transform input to [0, 1])
+
     :param x: (np.ndarray)
     :param mode: (str) One of "image_net", "tf", "rl".
     :return: (np.ndarray)
@@ -77,6 +80,9 @@ def denormalize(x, mode="rl"):
 
 def preprocess_image(image, convert_to_rgb=False):
     """
+    Crop, resize and normalize image.
+    Optionnally it also converts the image from BGR to RGB.
+
     :param image: (np.ndarray) image (BGR or RGB)
     :param convert_to_rgb: (bool) whether the conversion to rgb is needed or not
     :return: (np.ndarray)
@@ -100,8 +106,7 @@ class DataLoader(object):
     def __init__(self, minibatchlist, images_path, n_workers=1, folder='logs/recorded_data/',
                  infinite_loop=True, max_queue_len=4, is_training=False):
         """
-        A Custom dataloader to work with our datasets, and to prepare data for the different models
-        (inverse, priors, autoencoder, ...)
+        A Custom dataloader to preprocessing images and feed them to the network.
 
         :param minibatchlist: ([np.array]) list of observations indices (grouped per minibatch)
         :param images_path: (np.array) Array of path to images
@@ -121,13 +126,13 @@ class DataLoader(object):
         self.folder = folder
         self.queue = Queue(max_queue_len)
         self.process = None
-        self.is_trainin = is_training
         self.start_process()
 
     @staticmethod
     def create_minibatch_list(n_samples, batch_size):
         """
-        Create list of minibatch
+        Create list of minibatches.
+
         :param n_samples: (int)
         :param batch_size: (int)
         :return: ([np.array])

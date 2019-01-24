@@ -80,9 +80,7 @@ pprint(saved_hyperparams)
 
 # Compute and create log path
 log_path = os.path.join(args.log_folder, args.algo)
-# log_path = "{}/{}/".format(args.log_folder, args.algo)
 save_path = os.path.join(log_path, "{}_{}".format(ENV_ID, get_latest_run_id(log_path, ENV_ID) + 1))
-# params_path = "{}/{}".format(save_path, ENV_ID)
 params_path = os.path.join(save_path, ENV_ID)
 os.makedirs(params_path, exist_ok=True)
 
@@ -175,7 +173,10 @@ else:
     # Train an agent from scratch
     model = ALGOS[args.algo](env=env, tensorboard_log=tensorboard_log, verbose=1, **hyperparams)
 
+# Teleoperation mode:
+# we don't wrap the environment with a monitor or in a vecenv
 if args.teleop:
+    assert args.algo == "sac", "Teleoperation mode is not yet implemented for {}".format(args.algo)
     env = TeleopEnv(env, is_training=True)
     model.set_env(env)
     env.model = model

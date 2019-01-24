@@ -190,7 +190,8 @@ class SimHandler(asyncore.dispatcher):
 
     def handle_json_message(self, chunk):
         """
-        We are expecing a json object
+        We are expecing a json object.
+        
         :param chunk: (str)
         """
         try:

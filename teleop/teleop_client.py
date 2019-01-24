@@ -81,6 +81,18 @@ def control(x, theta, control_throttle, control_steering):
 
 
 class TeleopEnv(object):
+    """
+    Wrapper for teleoperation mode.
+    It creates a pygame window to listen to keyboard events and
+    display some logging (image, steering angle, throttle).
+
+    :param env: (gym.Env)
+    :param model: (Stable-Baselines model) [Optional] For testing only
+    :param is_recording: (bool)
+    :param is_training: (bool)
+    :param deterministic: (bool) When testing the model, use
+        stochastic or deterministic actions
+    """
     def __init__(self, env, model=None, is_recording=False,
                  is_training=False, deterministic=True):
         super(TeleopEnv, self).__init__()
@@ -114,7 +126,7 @@ class TeleopEnv(object):
         self.start_process()
 
     def start_process(self):
-        """Start preprocessing process"""
+        """Start main loop process."""
         self.process = Thread(target=self.main_loop)
         # Make it a deamon, so it will be deleted at the same time
         # of the main process
@@ -122,6 +134,12 @@ class TeleopEnv(object):
         self.process.start()
 
     def step(self, action):
+        """
+        One step in the simulation.
+
+        :param action: ([float])
+        :return: (np.ndarray, float, bool, dict)
+        """
         self.action = action
         self.current_obs, reward, done, info = self.env.step(action)
         # Overwrite done
@@ -140,9 +158,15 @@ class TeleopEnv(object):
         return self.current_obs, reward, done, info
 
     def render(self, mode='human'):
+        """
+        :param mode: (str)
+        """
         return self.env.render(mode)
 
     def reset(self):
+        """
+        Overwrite reset method. It cancels automatic resetting.
+        """
         self.n_out_of_bound = 0
         # Disable reset after init
         if self.need_reset:
@@ -154,24 +178,36 @@ class TeleopEnv(object):
             return self.current_obs
 
     def wait_for_teleop_reset(self):
+        """
+        Wait until the mode is passed to "AUTONOMOUS".
+        """
         self.ready_event.wait()
         return self.reset()
 
     def exit(self):
+        """
+        Exit the env and go back to the menu screen.
+        """
         self.env.reset()
         self.donkey_env.exit_scene()
 
     def wait(self):
+        """
+        Wait for main loop.
+        """
         self.process.join()
 
     def main_loop(self):
-        # Pygame require a window
+        """
+        Pygame loop that listens to keyboard events.
+        """
         pygame.init()
-
+        # Create a pygame window
         self.window = pygame.display.set_mode((800, 500), RESIZABLE)
 
         end = False
 
+        # Init values and fill the screen
         control_throttle, control_steering = 0, 0
         action = [control_steering, control_throttle]
         self.update_screen(action)
@@ -188,18 +224,21 @@ class TeleopEnv(object):
         if isinstance(donkey_env, Monitor):
             donkey_env = donkey_env.env
 
-        assert isinstance(donkey_env, DonkeyVAEEnv), print(donkey_env)
+        assert isinstance(donkey_env, DonkeyVAEEnv), str(donkey_env)
         self.donkey_env = donkey_env
 
+        # Used to prevent from multiple successive key press
         last_time_pressed = {'space': 0, 'm': 0, 't': 0, 'b': 0, 'o': 0}
         self.current_obs = self.reset()
 
         if self.model is not None:
             # Prevent error (uninitialized value)
+            # when using "fill_buffer"
             self.model.n_updates = 0
 
         while not end:
             x, theta = 0, 0
+            # record pressed keys
             keys = pygame.key.get_pressed()
             for keycode in moveBindingsGame.keys():
                 if keys[keycode]:
@@ -214,6 +253,7 @@ class TeleopEnv(object):
                 # avoid multiple key press
                 last_time_pressed['space'] = time.time()
 
+            # Switch from "MANUAL" to "AUTONOMOUS" mode
             if keys[K_m] and (time.time() - last_time_pressed['m']) > KEY_MIN_DELAY:
                 self.is_manual = not self.is_manual
                 # avoid multiple key press
@@ -228,6 +268,7 @@ class TeleopEnv(object):
                         self.done_event.clear()
                         self.ready_event.set()
 
+            # Toggle "TRAINING" and "TESTING" mode
             if keys[K_t] and (time.time() - last_time_pressed['t']) > KEY_MIN_DELAY:
                 self.is_training = not self.is_training
                 # avoid multiple key press
@@ -238,9 +279,11 @@ class TeleopEnv(object):
                 # avoid multiple key press
                 last_time_pressed['b'] = time.time()
 
+            # Reset to start position on the track
             if keys[K_r]:
                 self.current_obs = self.env.reset()
 
+            # Manual trigger of optimize method of SAC
             if keys[K_o]:
                 if (self.is_manual
                         and self.model is not None
@@ -250,6 +293,7 @@ class TeleopEnv(object):
                     self.model.optimize(len(self.model.replay_buffer), None, self.model.learning_rate(1))
                     last_time_pressed['o'] = time.time()
 
+            # Change track
             if keys[K_l]:
                 self.env.reset()
                 self.donkey_env.exit_scene()
@@ -266,6 +310,8 @@ class TeleopEnv(object):
                 self.action, _ = self.model.predict(self.current_obs, deterministic=self.deterministic)
 
             self.is_filling = False
+            # Don't call step method if training
+            # because it will be called from outside by the agent
             if not (self.is_training and not self.is_manual):
                 if self.is_manual and not self.fill_buffer:
                     donkey_env.viewer.take_action(self.action)
@@ -302,6 +348,13 @@ class TeleopEnv(object):
         self.exit_event.set()
 
     def write_text(self, text, x, y, font, color=GREY):
+        """
+        :param text: (str)
+        :param x: (int)
+        :param y: (int)
+        :param font: (str)
+        :param color: (tuple)
+        """
         text = str(text)
         text = font.render(text, True, color)
         self.window.blit(text, (x, y))
@@ -310,6 +363,9 @@ class TeleopEnv(object):
         self.window.fill((0, 0, 0))
 
     def update_screen(self, action):
+        """
+        :param action: ([float])
+        """
         self.clear()
         steering, throttle = action
         self.write_text('Throttle: {:.2f}, Steering: {:.2f}'.format(throttle, steering), 20, 0, FONT, WHITE)

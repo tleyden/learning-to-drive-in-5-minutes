@@ -25,8 +25,9 @@ class DonkeyVAEEnv(gym.Env):
     :param min_throttle: (float)
     :param max_throttle: (float)
     :param max_cte_error: (float) Max cross track error before ending an episode
-    :param n_command_history: (int) number of previous commmand to keep
+    :param n_command_history: (int) number of previous commmands to keep
         it will be concatenated with the vae latent vector
+    :param n_stack: (int) Number of frames to stack (used in teleop mode only)
     """
 
     metadata = {
@@ -55,6 +56,7 @@ class DonkeyVAEEnv(gym.Env):
         self.n_stack = n_stack
         self.stacked_obs = None
 
+        # Check for env variable
         exe_path = os.environ.get('DONKEY_SIM_PATH')
         if exe_path is None:
             # You must start the executable on your own
@@ -85,15 +87,14 @@ class DonkeyVAEEnv(gym.Env):
                                            high=np.array([MAX_STEERING, 1]), dtype=np.float32)
 
         if vae is None:
+            # Using pixels as input
             if n_command_history > 0:
                 warnings.warn("n_command_history not supported for images"
                               "(it will not be concatenated with the input)")
             self.observation_space = spaces.Box(low=0, high=255,
                                                 shape=INPUT_DIM, dtype=np.uint8)
-            # # camera sensor data
-            # self.observation_space = spaces.Box(0, 255, self.viewer.get_sensor_size(), dtype=np.uint8)
         else:
-            # z latent vector
+            # z latent vector from the VAE (encoded input image)
             self.observation_space = spaces.Box(low=np.finfo(np.float32).min,
                                                 high=np.finfo(np.float32).max,
                                                 shape=(1, self.z_size + self.n_commands * n_command_history),
@@ -120,6 +121,10 @@ class DonkeyVAEEnv(gym.Env):
         self.viewer.handler.send_exit_scene()
 
     def jerk_penalty(self):
+        """
+        Add a continuity penalty to limit jerk.
+        :return: (float)
+        """
         jerk_penalty = 0
         if self.n_command_history > 1:
             # Take only last command into account
@@ -136,6 +141,17 @@ class DonkeyVAEEnv(gym.Env):
         return jerk_penalty
 
     def postprocessing_step(self, action, observation, reward, done, info):
+        """
+        Update the reward (add jerk_penalty if needed), the command history
+        and stack new observation (when using frame-stacking).
+
+        :param action: ([float])
+        :param observation: (np.ndarray)
+        :param reward: (float)
+        :param done: (bool)
+        :param info: (dict)
+        :return: (np.ndarray, float, bool, dict)
+        """
         # Update command history
         if self.n_command_history > 0:
             self.command_history = np.roll(self.command_history, shift=-self.n_commands, axis=-1)
@@ -162,6 +178,8 @@ class DonkeyVAEEnv(gym.Env):
         :param action: (np.ndarray)
         :return: (np.ndarray, float, bool, dict)
         """
+        # action[0] is the steering angle
+        # action[1] is the throttle
         if self.const_throttle is not None:
             action = np.concatenate([action, [self.const_throttle]])
         else:
@@ -170,13 +188,14 @@ class DonkeyVAEEnv(gym.Env):
             # Convert from [0, 1] to [min, max]
             action[1] = (1 - t) * self.min_throttle + self.max_throttle * t
 
-        # Clip diff in action to enforce continuity
+        # Clip steering angle rate to enforce continuity
         if self.n_command_history > 0:
             prev_steering = self.command_history[0, -2]
             max_diff = (MAX_STEERING_DIFF - 1e-5) * (MAX_STEERING - MIN_STEERING)
             diff = np.clip(action[0] - prev_steering, -max_diff, max_diff)
             action[0] = prev_steering + diff
 
+        # Repeat action if using frame_skip
         for _ in range(self.frame_skip):
             self.viewer.take_action(action)
             observation, reward, done, info = self.observe()
@@ -199,20 +218,24 @@ class DonkeyVAEEnv(gym.Env):
         return observation
 
     def render(self, mode='human'):
+        """
+        :param mode: (str)
+        """
         if mode == 'rgb_array':
             return self.viewer.handler.original_image
         return None
 
     def observe(self):
         """
-        Encode the observation using VAE if needed
+        Encode the observation using VAE if needed.
+
+        :return: (np.ndarray, float, bool, dict)
         """
         observation, reward, done, info = self.viewer.observe()
         # Learn from Pixels
         if self.vae is None:
             return observation, reward, done, info
-        # Store image in VAE buffer.
-        # self.vae.buffer_append(observation)
+        # Encode the image
         return self.vae.encode(observation), reward, done, info
 
     def close(self):
@@ -225,27 +248,7 @@ class DonkeyVAEEnv(gym.Env):
         return [seed]
 
     def set_vae(self, vae):
+        """
+        :param vae: (VAEController object)
+        """
         self.vae = vae
-
-# class GeneratedRoadsEnv(DonkeyVAEEnv):
-#
-#     def __init__(self, *args, **kwargs):
-#         super(GeneratedRoadsEnv, self).__init__(level=0, *args, **kwargs)
-#
-#
-# class WarehouseEnv(DonkeyVAEEnv):
-#
-#     def __init__(self, *args, **kwargs):
-#         super(WarehouseEnv, self).__init__(level=1, *args, **kwargs)
-#
-#
-# class AvcSparkfunEnv(DonkeyVAEEnv):
-#
-#     def __init__(self, *args, **kwargs):
-#         super(AvcSparkfunEnv, self).__init__(level=2, *args, **kwargs)
-#
-#
-# class GeneratedTrackEnv(DonkeyVAEEnv):
-#
-#     def __init__(self, *args, **kwargs):
-#         super(GeneratedTrackEnv, self).__init__(level=3, *args, **kwargs)

@@ -79,16 +79,18 @@ register_policy('CustomMlpPolicy', CustomMlpPolicy)
 
 
 def load_vae(path=None, z_size=None):
+    """
+    :param path: (str)
+    :param z_size: (int)
+    :return: (VAEController)
+    """
     # z_size will be recovered from saved model
     if z_size is None:
         assert path is not None
 
     vae = VAEController(z_size=z_size)
     if path is not None:
-        if path.endswith('.json'):
-            vae.load_json(path)
-        else:
-            vae.load(path)
+        vae.load(path)
     print("Dim VAE = {}".format(vae.z_size))
     return vae
 
@@ -144,12 +146,10 @@ def create_test_env(stats_path=None, seed=0,
         logger.configure()
 
     vae_path = hyperparams['vae_path']
-    vae_path_json = ''
     if vae_path == '':
-        vae_path_json = os.path.join(stats_path, 'vae.json')
         vae_path = os.path.join(stats_path, 'vae.pkl')
     vae = None
-    if stats_path is not None and (os.path.isfile(vae_path) or os.path.isfile(vae_path_json)):
+    if stats_path is not None and os.path.isfile(vae_path):
         vae = load_vae(vae_path)
 
     env = DummyVecEnv([make_env(seed, log_dir, vae=vae,
@@ -257,6 +257,8 @@ def get_saved_hyperparams(stats_path, norm_reward=False):
 
 def create_callback(algo, save_path, verbose=1):
     """
+    Create callback function for saving best model frequently.
+
     :param algo: (str)
     :param save_path: (str)
     :param verbose: (int)
@@ -268,6 +270,7 @@ def create_callback(algo, save_path, verbose=1):
     def sac_callback(_locals, _globals):
         """
         Callback for saving best model when using SAC.
+
         :param _locals: (dict)
         :param _globals: (dict)
         :return: (bool) If False: stop training

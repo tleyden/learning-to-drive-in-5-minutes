@@ -47,20 +47,30 @@ class DonkeyUnitySimContoller:
         return self.server.handle_close()
 
     def wait_until_loaded(self):
+        """
+        Wait for a client (Unity simulator).
+        """
         while not self.handler.loaded:
-            print("Waiting for sim to start...")
+            print("Waiting for sim to start..."
+                  "if the simulation is running, press EXIT to go back to the menu")
             time.sleep(3.0)
 
     def reset(self):
         self.handler.reset()
 
     def get_sensor_size(self):
+        """
+        :return: (int, int, int)
+        """
         return self.handler.get_sensor_size()
 
     def take_action(self, action):
         self.handler.take_action(action)
 
     def observe(self):
+        """
+        :return: (np.ndarray)
+        """
         return self.handler.observe()
 
     def quit(self):
@@ -98,7 +108,9 @@ class DonkeyUnitySimHandler(IMesgHandler):
         self.original_image = None
         self.last_obs = None
         self.last_throttle = 0.0
+        # Disabled: hit was used to end episode when bumping into an object
         self.hit = "none"
+        # Cross track error
         self.cte = 0.0
         self.x = 0.0
         self.y = 0.0
@@ -123,15 +135,15 @@ class DonkeyUnitySimHandler(IMesgHandler):
 
     def on_disconnect(self):
         """
-        Close socket
+        Close socket.
         """
         self.sock.close()
         self.sock = None
 
     def on_recv_message(self, message):
         """
-        Distribute the received message
-        to the appropriate function.
+        Distribute the received message to the appropriate function.
+
         :param message: (dict)
         """
         if 'msg_type' not in message:
@@ -150,7 +162,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
         resets car to initial position.
         """
         if self.verbose:
-            print("reseting")
+            print("resetting")
         self.image_array = np.zeros(self.camera_img_size)
         self.last_obs = None
         self.hit = "none"
@@ -226,6 +238,7 @@ class DonkeyUnitySimHandler(IMesgHandler):
     def on_telemetry(self, data):
         """
         Update car info when receiving telemetry message.
+
         :param data: (dict)
         """
         img_string = data["image"]

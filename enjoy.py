@@ -72,15 +72,15 @@ model = ALGOS[algo].load(model_path)
 
 obs = env.reset()
 
-# Force deterministic for DQN and DDPG
+# Force deterministic for SAC and DDPG
 deterministic = args.deterministic or algo in ['ddpg', 'sac']
+if args.verbose >= 1:
+    print("Deterministic actions: {}".format(deterministic))
 
 running_reward = 0.0
 ep_len = 0
 for _ in range(args.n_timesteps):
     action, _ = model.predict(obs, deterministic=deterministic)
-    # Random Agent
-    # action = [env.action_space.sample()]
     # Clip Action to avoid out of bound errors
     if isinstance(env.action_space, gym.spaces.Box):
         action = np.clip(action, env.action_space.low, env.action_space.high)

@@ -114,7 +114,12 @@ python train.py --algo sac -n 15000 -vae logs/vae-level-1-dim-64.pkl --teleop
 
 Note: although the size of the VAE is different between level 0 and 1, this is not an important factor.
 
+## Record a Video of the on-board camera
 
+You need a trained model. For instance, for recording 1000 steps with the last trained SAC agent:
+```
+python -m utils.record_video --algo sac --vae-path logs/level-0/vae-32-2.pkl -n 1000
+```
 
 ## Credits
 
