@@ -1,12 +1,12 @@
 # Code adapted from https://github.com/araffin/rl-baselines-zoo
 # Author: Antonin Raffin
-
 import glob
 import os
 import time
 
 import yaml
 import tensorflow as tf
+import numpy as np
 from stable_baselines import logger
 from stable_baselines.bench import Monitor
 from stable_baselines.common import set_global_seeds
@@ -32,6 +32,8 @@ ALGOS = {
     'ppo2': PPO2
 }
 
+# Used for saving best model
+best_mean_reward = -np.inf
 
 # ================== Custom Policies =================
 
@@ -251,3 +253,36 @@ def get_saved_hyperparams(stats_path, norm_reward=False):
                 normalize_kwargs = {'norm_obs': hyperparams['normalize'], 'norm_reward': norm_reward}
             hyperparams['normalize_kwargs'] = normalize_kwargs
     return hyperparams, stats_path
+
+
+def create_callback(algo, save_path, verbose=1):
+    """
+    :param algo: (str)
+    :param save_path: (str)
+    :param verbose: (int)
+    :return: (function) the callback function
+    """
+    if algo != 'sac':
+        raise NotImplementedError("Callback creation not implemented yet for {}".format(algo))
+
+    def sac_callback(_locals, _globals):
+        """
+        Callback for saving best model when using SAC.
+        :param _locals: (dict)
+        :param _globals: (dict)
+        :return: (bool) If False: stop training
+        """
+        global best_mean_reward
+        episode_rewards = _locals['episode_rewards']
+        if len(episode_rewards[-101:-1]) == 0:
+            return True
+        else:
+            mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
+        if mean_reward > best_mean_reward:
+            if verbose >= 1:
+                print("Saving best model")
+            _locals['self'].save(save_path)
+            best_mean_reward = mean_reward
+
+        return True
+    return sac_callback

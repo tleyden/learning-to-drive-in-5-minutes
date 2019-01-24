@@ -31,7 +31,8 @@ parser.add_argument('--norm-reward', action='store_true', default=False,
 parser.add_argument('--seed', help='Random generator seed', type=int, default=0)
 parser.add_argument('--reward-log', help='Where to log reward', default='', type=str)
 parser.add_argument('-vae', '--vae-path', help='Path to saved VAE', type=str, default='')
-
+parser.add_argument('-best', '--best-model', action='store_true', default=False,
+                    help='Use best saved model of that experiment (if it exists)')
 args = parser.parse_args()
 
 algo = args.algo
@@ -47,7 +48,11 @@ if args.exp_id > 0:
 else:
     log_path = os.path.join(folder, algo)
 
-model_path = "{}/{}.pkl".format(log_path, ENV_ID)
+best_path = ''
+if args.best_model:
+    best_path = '_best'
+
+model_path = os.path.join(log_path, "{}{}.pkl".format(ENV_ID, best_path))
 
 assert os.path.isdir(log_path), "The {} folder was not found".format(log_path)
 assert os.path.isfile(model_path), "No model found for {} on {}, path: {}".format(algo, ENV_ID, model_path)

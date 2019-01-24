@@ -15,7 +15,7 @@ from stable_baselines.ppo2.ppo2 import constfn
 
 from config import MIN_THROTTLE, MAX_THROTTLE, FRAME_SKIP,\
     MAX_CTE_ERROR, SIM_PARAMS, N_COMMAND_HISTORY, Z_SIZE, BASE_ENV, ENV_ID, MAX_STEERING_DIFF
-from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, load_vae
+from utils.utils import make_env, ALGOS, linear_schedule, get_latest_run_id, load_vae, create_callback
 from teleop.teleop_client import TeleopEnv
 
 parser = argparse.ArgumentParser()
@@ -77,6 +77,14 @@ if vae is not None:
 for key in SIM_PARAMS:
     saved_hyperparams[key] = eval(key)
 pprint(saved_hyperparams)
+
+# Compute and create log path
+log_path = os.path.join(args.log_folder, args.algo)
+# log_path = "{}/{}/".format(args.log_folder, args.algo)
+save_path = os.path.join(log_path, "{}_{}".format(ENV_ID, get_latest_run_id(log_path, ENV_ID) + 1))
+# params_path = "{}/{}".format(save_path, ENV_ID)
+params_path = os.path.join(save_path, ENV_ID)
+os.makedirs(params_path, exist_ok=True)
 
 # Create learning rate schedules for ppo2 and sac
 if args.algo in ["ppo2", "sac"]:
@@ -176,6 +184,11 @@ kwargs = {}
 if args.log_interval > -1:
     kwargs = {'log_interval': args.log_interval}
 
+if args.algo == 'sac':
+    kwargs.update({'callback': create_callback(args.algo,
+                                               os.path.join(save_path, ENV_ID + "_best"),
+                                               verbose=1)})
+
 model.learn(n_timesteps, **kwargs)
 
 if args.teleop:
@@ -191,13 +204,7 @@ else:
     env.envs[0].env.exit_scene()
 
 # Save trained model
-log_path = "{}/{}/".format(args.log_folder, args.algo)
-save_path = os.path.join(log_path, "{}_{}".format(ENV_ID, get_latest_run_id(log_path, ENV_ID) + 1))
-params_path = "{}/{}".format(save_path, ENV_ID)
-os.makedirs(params_path, exist_ok=True)
-
-
-model.save("{}/{}".format(save_path, ENV_ID))
+model.save(os.path.join(save_path, ENV_ID))
 # Save hyperparams
 with open(os.path.join(params_path, 'config.yml'), 'w') as f:
     yaml.dump(saved_hyperparams, f)
