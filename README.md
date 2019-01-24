@@ -82,17 +82,17 @@ LEVEL = 0
 
 Train in normal mode (smooth control), it takes ~5-10 minutes:
 ```
-python train.py --algo sac -n 8000 -vae log/vae-level-0-dim-32.pkl
+python train.py --algo sac -n 8000 -vae logs/vae-level-0-dim-32.pkl
 ```
 
 Train in normal mode (very smooth control with `MAX_STEERING_DIFF = 0.1`), it takes ~20 minutes:
 ```
-python train.py --algo sac -n 20000 -vae log/vae-level-0-dim-32.pkl
+python train.py --algo sac -n 20000 -vae logs/vae-level-0-dim-32.pkl
 ```
 
 Train in teleoperation mode (`MAX_CTE_ERROR = 10.0`), it takes ~5-10 minutes:
 ```
-python train.py --algo sac -n 8000 -vae log/vae-level-0-dim-32.pkl --teleop
+python train.py --algo sac -n 8000 -vae logs/vae-level-0-dim-32.pkl --teleop
 ```
 
 ### Level 1
@@ -109,7 +109,7 @@ LEVEL = 1
 
 Train in teleoperation mode, it takes ~10 minutes:
 ```
-python train.py --algo sac -n 15000 -vae log/vae-level-1-dim-64.pkl --teleop
+python train.py --algo sac -n 15000 -vae logs/vae-level-1-dim-64.pkl --teleop
 ```
 
 Note: although the size of the VAE is different between level 0 and 1, this is not an important factor.
