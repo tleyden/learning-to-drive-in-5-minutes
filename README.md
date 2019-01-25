@@ -121,6 +121,21 @@ You need a trained model. For instance, for recording 1000 steps with the last t
 python -m utils.record_video --algo sac --vae-path logs/level-0/vae-32-2.pkl -n 1000
 ```
 
+## Citing the Project
+
+To cite this repository in publications:
+
+```
+@misc{drive-smoothly-in-minutes,
+  author = {Raffin, Antonin and Sokolkov, Roma},
+  title = {Learning to Drive Smoothly in Minutes},
+  year = {2019},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/araffin/learning-to-drive-in-5-minutes/}},
+}
+```
+
 ## Credits
 
 Related Paper: ["Learning to Drive in a Day"](https://arxiv.org/pdf/1807.00412.pdf).
