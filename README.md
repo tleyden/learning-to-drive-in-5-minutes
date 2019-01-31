@@ -5,6 +5,8 @@ Learning to drive smoothly in minutes, using a reinforcement learning algorithm 
 
 Blog post on Medium: [link](https://medium.com/@araffin/learning-to-drive-smoothly-in-minutes-450a7cdb35f4)
 
+Video: [https://www.youtube.com/watch?v=iiuKh0yDyKE](https://www.youtube.com/watch?v=iiuKh0yDyKE)
+
 
 Level-0          | Level-1
 :-------------------------:|:-------------------------:
