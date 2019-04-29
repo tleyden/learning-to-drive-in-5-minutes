@@ -283,7 +283,7 @@ def create_callback(algo, save_path, verbose=1):
             mean_reward = round(float(np.mean(episode_rewards[-101:-1])), 1)
         if mean_reward > best_mean_reward:
             if verbose >= 1:
-                print("Saving best model")
+                print("Saving best model to {}".format(save_path))
             _locals['self'].save(save_path)
             best_mean_reward = mean_reward
 

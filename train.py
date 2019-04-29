@@ -205,7 +205,10 @@ else:
     env.envs[0].env.exit_scene()
 
 # Save trained model
-model.save(os.path.join(save_path, ENV_ID))
+save_path = os.path.join(save_path, ENV_ID)
+model.save(save_path)
+print("Saved model to {}".format(save_path))
+
 # Save hyperparams
 with open(os.path.join(params_path, 'config.yml'), 'w') as f:
     yaml.dump(saved_hyperparams, f)
