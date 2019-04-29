@@ -17,29 +17,54 @@ Level-0          | Level-1
 Note: the pretrained agents must be saved in `logs/sac/` folder (you need to pass `--exp-id 6` (index of the folder) to use the pretrained agent).
 
 
-## Quick Start
+## Install deps + code (OSX)
 
-0. Download simulator [here](https://drive.google.com/open?id=1h2VfpGHlZetL5RAPZ79bhDRkvlfuB4Wb) or build it from [source](https://github.com/tawnkramer/sdsandbox/tree/donkey)
-1. Install dependencies (cf requirements.txt)
-2. (optional but recommended) Download pre-trained VAE: [VAE Level 0](https://drive.google.com/open?id=1n7FosFA0hALhuESf1j1yg-hERCnfVc4b) [VAE Level 1](https://drive.google.com/open?id=1hfQNAvVp2QmbmTLklWt2MxtAjrlisr2B)
-3. Train a control policy for 5000 steps using Soft Actor-Critic (SAC)
+1. Download sdsandbox [here](https://drive.google.com/open?id=1h2VfpGHlZetL5RAPZ79bhDRkvlfuB4Wb) or build it from [source](https://github.com/tawnkramer/sdsandbox/tree/donkey)
+1. Clone this repo
+1. Create a virtualenv and activate it with `python3 -m venv env && source env/bin/activate`
+1. Install OpenMPI via `brew install openmpi` which is needed for the `mpi4py` python dependency
+1. Install dependencies via `pip install -r requirements.txt`
+1. `pip install tensorflow`
 
-```
-python train.py --algo sac -vae path-to-vae.pkl -n 5000
-```
+## Verify setup using pre-trained agent
 
-4. Enjoy trained agent for 2000 steps
+1. Downlaod [pre-trained variational auto-encoder (VAE)](https://drive.google.com/open?id=1n7FosFA0hALhuESf1j1yg-hERCnfVc4b)
+1. Download pretrained agent](https://drive.google.com/open?id=10Hgd5BKfn1AmmVdLlNcDll6yXqVkujoq) and unzip in `logs/sac` dir.  You should end up with a folder: `logs/sac/DonkeyVae-v0-level-0_6`
+1. Run via:
 
-```
-python enjoy.py --algo sac -vae path-to-vae.pkl --exp-id 0 -n 2000
-```
+    ```
+    python enjoy.py --algo sac -vae vae-level-0-dim-32.pkl --exp-id 6 -n 2000
+    ```
+1. The script should be emitting: `Waiting for sim to start....` in a loop and it's waiting for the Unity simulation to connect to port `9090`
+1. In the Unity window, hit the **Play** button near the top-center of the window, followed by the **Use NN Steering** button inside of the simulation window.
+1. The car should start driving using the pretrained model, and it will restart whenever it goes off course.  To have it run longer, increase the `-n` parameter.
 
-To train on a different level, you need to change `LEVEL = 0` to `LEVEL = 1` in `config.py`
+## Train
+
+1. Downlaod [pre-trained variational auto-encoder (VAE)](https://drive.google.com/open?id=1n7FosFA0hALhuESf1j1yg-hERCnfVc4b)
+1. Train a control policy for 5000 steps using Soft Actor-Critic (SAC)
+
+    ```
+    python train.py --algo sac -vae vae-level-0-dim-32.pkl -n 5000
+    ```
+1. The script should be emitting: `Waiting for sim to start....` in a loop and it's waiting for the Unity simulation to connect to port `9090`
+1. In the Unity window, hit the **Play** button near the top-center of the window, followed by the **Use NN Steering** button inside of the simulation window.
+1. The car should start driving using the pretrained model, and it will restart whenever it goes off course.  To have it run longer, increase the `-n` parameter.
+
+The result files will be saved in a new directory under `logs/sac`, which can then be tested via the `enjoy.py` script.
+
+## Train on a different level
+
+To train on a different level:
+
+1. [Download VAE level 1](https://drive.google.com/open?id=1hfQNAvVp2QmbmTLklWt2MxtAjrlisr2B) 
+1. Change `LEVEL = 0` to `LEVEL = 1` in `config.py`
+1. Re-run training
 
 ## Train the Variational AutoEncoder (VAE)
 
 0. Collect images using the teleoperation mode:
-
+   
 ```
 python -m teleop.teleop_client --record-folder path-to-record/folder/
 ```
