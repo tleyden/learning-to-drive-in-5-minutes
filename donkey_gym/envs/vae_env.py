@@ -63,7 +63,7 @@ class DonkeyVAEEnv(gym.Env):
             print("Missing DONKEY_SIM_PATH environment var. We assume the unity env is already started")
 
         # TCP port for communicating with simulation
-        port = int(os.environ.get('DONKEY_SIM_PORT', 9091))
+        port = int(os.environ.get('DONKEY_SIM_PORT', 9090))  # should this be 9090?  added PR https://github.com/araffin/learning-to-drive-in-5-minutes/pull/4
 
         self.unity_process = None
         if exe_path is not None:
