@@ -119,6 +119,9 @@ class SACWithVAE(SAC):
                     self.episode_reward = total_episode_reward_logger(self.episode_reward, ep_reward,
                                                                       ep_done, writer, step)
 
+                # This is a hack to keep training from time to time, otherwise, as this custom sac version only
+                # trains after each reset (each end of episode), it won't train until the end of an episode.
+                # Set a high "train_freq" if you want to avoid this from happening.
                 if ep_len > self.train_freq:
                     print("Additional training")
                     self.env.reset()
