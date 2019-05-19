@@ -214,7 +214,12 @@ class DonkeyUnitySimHandler(IMesgHandler):
         """
         :return: (bool)
         """
-        return self.hit != "none" or math.fabs(self.cte) > self.max_cte_error
+        hit = self.hit != "none"
+        exceeded_cte = math.fabs(self.cte) > self.max_cte_error
+        if exceeded_cte:
+            print("CTE {} exceeded max cte error {}".format(self.cte, self.max_cte_error))
+
+        return hit or exceeded_cte
 
     def calc_reward(self, done):
         """
