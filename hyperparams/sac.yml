@@ -7,7 +7,7 @@ DonkeyVae-v0:
   # learning_rate: lin_3e-3
   buffer_size: 30000
   batch_size: 64
-  train_freq: 3000
+  train_freq: 30000
   gamma: 0.99
   ent_coef: 'auto_0.1'
   # ent_coef: 0.05
