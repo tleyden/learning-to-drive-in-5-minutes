@@ -183,8 +183,23 @@ if args.algo == 'sac':
                                                os.path.join(save_path, ENV_ID + "_best"),
                                                verbose=1)})
 
+
+# Training loop
+
+# Inputs:
+#    - Existing model (or blank to train from scratch)
+#    - Number of tracks to master
+
+# Startup:
+#    - Open model if given, create a brand new model if trained from scratch
+
+# Until all tracks mastered:
+#    - Train the model until it can complete the track
+#    - Regenerate a new track
+
+# Old training loop
 while True:
     model.learn(n_timesteps, **kwargs)
     env.reset()
     donkeyEnv = env.envs[0].env
-    donkeyEnv.regen_road()
+    donkeyEnv.regen_road(rand_seed=int(time.time()))
