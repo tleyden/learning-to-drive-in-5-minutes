@@ -315,6 +315,22 @@ class DonkeyUnitySimHandler(IMesgHandler):
         msg = {'msg_type': 'control', 'steering': steer.__str__(), 'throttle': throttle.__str__(), 'brake': '0.0'}
         self.queue_message(msg)
 
+    def send_regen_road(self, road_style=0, rand_seed=0, turn_increment=0.0):
+        '''
+        Regenerate the road, where available. For now only in level 0.
+        In level 0 there are currently 5 road styles. This changes the texture on the road
+        and also the road width.
+        The rand_seed can be used to get some determinism in road generation.
+        The turn_increment defaults to 1.0 internally. Provide a non zero positive float
+        to affect the curviness of the road. Smaller numbers will provide more shallow curves.
+        '''
+        msg = {'msg_type': 'regen_road',
+               'road_style': road_style.__str__(),
+               'rand_seed': rand_seed.__str__(),
+               'turn_increment': turn_increment.__str__()}
+
+        self.sock.queue_message(msg)
+
     def send_reset_car(self):
         """
         Reset car to initial position.

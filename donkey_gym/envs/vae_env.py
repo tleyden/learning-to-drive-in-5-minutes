@@ -120,6 +120,9 @@ class DonkeyVAEEnv(gym.Env):
     def exit_scene(self):
         self.viewer.handler.send_exit_scene()
 
+    def regen_road(self, road_style=0, rand_seed=0, turn_increment=0.0):
+        self.viewer.handler.send_regen_road(road_style, rand_seed, turn_increment)
+
     def jerk_penalty(self):
         """
         Add a continuity penalty to limit jerk.
