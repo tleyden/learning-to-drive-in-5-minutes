@@ -4,6 +4,8 @@
 import argparse
 import os
 import time
+import random
+
 from collections import OrderedDict
 from pprint import pprint
 
@@ -185,21 +187,24 @@ if args.algo == 'sac':
 
 
 # Training loop
-
-# Inputs:
-#    - Existing model (or blank to train from scratch)
-#    - Number of tracks to master
-
-# Startup:
-#    - Open model if given, create a brand new model if trained from scratch
-
-# Until all tracks mastered:
-#    - Train the model until it can complete the track
-#    - Regenerate a new track
-
-# Old training loop
-while True:
+for i in range(100):
     model.learn(n_timesteps, **kwargs)
     env.reset()
     donkeyEnv = env.envs[0].env
-    donkeyEnv.regen_road(rand_seed=int(time.time()))
+    road_styles = range(5)
+    random_road_style = random.choice(road_styles)
+    print("Regenerating road on track # {}".format(random_road_style))
+    donkeyEnv.regen_road(rand_seed=int(time.time()), road_style=random_road_style)
+
+
+# Close the connection properly
+env.reset()
+if isinstance(env, VecFrameStack):
+    env = env.venv
+# HACK to bypass Monitor wrapper
+env.envs[0].env.exit_scene()
+
+# Save trained model
+save_path = os.path.join(save_path, ENV_ID)
+model.save(save_path)
+print("Saved model to {}".format(save_path))
