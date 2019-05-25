@@ -336,6 +336,16 @@ class DonkeyUnitySimHandler(IMesgHandler):
 
         self.sock.queue_message(msg)
 
+    def send_next_track(self):
+        '''
+        Switch to next track.  If we're on the last track, it will wrap around to the first track.
+
+        This is distinct from regenerating a road on an existing track.  Tracks
+        are distinct terrains (mountains, desert, indoor warehouse)
+        '''
+        msg = {'msg_type': 'next_track'}
+        self.queue_message(msg)
+
     def send_reset_car(self):
         """
         Reset car to initial position.
