@@ -4,6 +4,7 @@
 import argparse
 import os
 import time
+import random
 
 import gym
 import numpy as np
@@ -57,6 +58,8 @@ model_path = os.path.join(log_path, "{}{}.pkl".format(ENV_ID, best_path))
 assert os.path.isdir(log_path), "The {} folder was not found".format(log_path)
 assert os.path.isfile(model_path), "No model found for {} on {}, path: {}".format(algo, ENV_ID, model_path)
 
+print("Using model: {}".format(model_path))
+
 set_global_seeds(args.seed)
 
 stats_path = os.path.join(log_path, ENV_ID)
@@ -79,7 +82,8 @@ if args.verbose >= 1:
 
 running_reward = 0.0
 ep_len = 0
-for _ in range(args.n_timesteps):
+for i in range(args.n_timesteps):
+
     action, _ = model.predict(obs, deterministic=deterministic)
     # Clip Action to avoid out of bound errors
     if isinstance(env.action_space, gym.spaces.Box):
@@ -97,6 +101,11 @@ for _ in range(args.n_timesteps):
         print("Episode Length", ep_len)
         running_reward = 0.0
         ep_len = 0
+        print("Regenerating track")
+        donkeyEnv = env.envs[0].env
+        road_styles = range(5)
+        donkeyEnv.regen_road(rand_seed=int(time.time()), road_style=random.choice(road_styles))
+
 
 env.reset()
 env.envs[0].env.exit_scene()
