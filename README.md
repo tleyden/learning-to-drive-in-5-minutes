@@ -19,7 +19,7 @@ Note: the pretrained agents must be saved in `logs/sac/` folder (you need to pas
 
 ## Install deps + code (OSX)
 
-1. Download sdsandbox [here](https://drive.google.com/open?id=1h2VfpGHlZetL5RAPZ79bhDRkvlfuB4Wb) or build it from [source](https://github.com/tawnkramer/sdsandbox/tree/donkey)
+1. Download sdsandbox [here](https://drive.google.com/open?id=1h2VfpGHlZetL5RAPZ79bhDRkvlfuB4Wb) or build it from [source](https://github.com/tawnkramer/sdsandbox/tree/donkey).  This includes installing Unity 2018.3.14f1.
 1. Clone this repo
 1. Create a virtualenv and activate it with `python3 -m venv env && source env/bin/activate`
 1. Install OpenMPI via `brew install openmpi` which is needed for the `mpi4py` python dependency
