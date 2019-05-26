@@ -17,19 +17,26 @@ Level-0          | Level-1
 Note: the pretrained agents must be saved in `logs/sac/` folder (you need to pass `--exp-id 6` (index of the folder) to use the pretrained agent).
 
 
-## Install deps + code (OSX)
+## Install SDSandbox unity simulator
 
-1. Download sdsandbox [here](https://drive.google.com/open?id=1h2VfpGHlZetL5RAPZ79bhDRkvlfuB4Wb) or build it from [source](https://github.com/tawnkramer/sdsandbox/tree/donkey).  This includes installing Unity 2018.3.14f1.
+1. Installing UnityHub and Unity 2018.3.14f1.
+1. Git clone the [sdsandbox source](https://github.com/tawnkramer/sdsandbox/tree/donkey). 
+1. `git checkout donkey` to switch to the donkey branch
+1. Add a new project in Unity Hub and choose the sdsim directory
+1. In Unity, go to File / Open Scene and choose the `road_generator.unity` file.
+
+
+## Install Deep Reinforcement Learning controller deps + code (OSX)
+
 1. Clone this repo
 1. Create a virtualenv and activate it with `python3 -m venv env && source env/bin/activate`
 1. Install OpenMPI via `brew install openmpi` which is needed for the `mpi4py` python dependency
 1. Install dependencies via `pip install -r requirements.txt`
-1. `pip install tensorflow`
 
 ## Verify setup using pre-trained agent
 
-1. Downlaod [pre-trained variational auto-encoder (VAE)](https://drive.google.com/open?id=1n7FosFA0hALhuESf1j1yg-hERCnfVc4b)
-1. Download pretrained agent](https://drive.google.com/open?id=10Hgd5BKfn1AmmVdLlNcDll6yXqVkujoq) and unzip in `logs/sac` dir.  You should end up with a folder: `logs/sac/DonkeyVae-v0-level-0_6`
+1. Downlaod [pre-trained variational auto-encoder (VAE)](https://drive.google.com/open?id=1n7FosFA0hALhuESf1j1yg-hERCnfVc4b) and save in project directory root
+1. Download [pretrained agent](https://drive.google.com/open?id=10Hgd5BKfn1AmmVdLlNcDll6yXqVkujoq) and unzip in `logs/sac` dir.  You should end up with a folder: `logs/sac/DonkeyVae-v0-level-0_6`
 1. Run via:
 
     ```
