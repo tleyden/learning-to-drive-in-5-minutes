@@ -191,7 +191,8 @@ for i in range(100):
     model.learn(n_timesteps, **kwargs)
     env.reset()
     donkeyEnv = env.envs[0].env
-    road_styles = range(5)
+    #road_styles = range(5)
+    road_styles = [0, 1, 3]  # road 2 and 4 are confusing because only half the lane is available with no clear lane markers
     random_road_style = random.choice(road_styles)
     print("Regenerating road on track # {}".format(random_road_style))
     donkeyEnv.regen_road(rand_seed=int(time.time()), road_style=random_road_style)
